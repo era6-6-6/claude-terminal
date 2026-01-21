@@ -1,24 +1,71 @@
 {
   "name": "claude-terminal",
-  "version": "1.0.0",
+  "version": "0.0.6",
   "description": "Terminal custom pour Claude Code avec gestion des projets, skills et agents",
   "main": "main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "dotenv -e .env -- electron-builder --win",
+    "publish": "dotenv -e .env -- electron-builder --win --publish always"
   },
   "keywords": [
     "claude",
     "terminal",
     "electron"
   ],
-  "author": "",
+  "author": "Yanis",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Sterll/claude-terminal.git"
+  },
   "devDependencies": {
-    "electron": "^28.0.0"
+    "dotenv-cli": "^11.0.0",
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",
     "@xterm/xterm": "^6.0.0",
+    "electron-updater": "^6.1.7",
     "node-pty": "^1.1.0"
+  },
+  "build": {
+    "appId": "com.yanis.claude-terminal",
+    "productName": "Claude Terminal",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "renderer.js",
+      "index.html",
+      "quick-picker.html",
+      "styles.css",
+      "node_modules/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "Sterll",
+      "repo": "claude-terminal"
+    }
   }
 }
