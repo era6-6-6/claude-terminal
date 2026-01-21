@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Quick Pick</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: transparent;
+      overflow: hidden;
+    }
+
+    .container {
+      background: #1a1a1a;
+      border: 1px solid #333;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+      overflow: hidden;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 20px;
+      background: #222;
+      border-bottom: 1px solid #333;
+    }
+
+    .search-box svg {
+      width: 20px;
+      height: 20px;
+      color: #666;
+      flex-shrink: 0;
+    }
+
+    .search-box input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: #fff;
+      font-size: 16px;
+      outline: none;
+    }
+
+    .search-box input::placeholder {
+      color: #555;
+    }
+
+    .shortcut {
+      font-size: 11px;
+      color: #555;
+      padding: 4px 8px;
+      background: #2a2a2a;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    .list {
+      max-height: 320px;
+      overflow-y: auto;
+    }
+
+    .list::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .list::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 3px;
+    }
+
+    .item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 20px;
+      cursor: pointer;
+      border-left: 3px solid transparent;
+      transition: all 0.1s;
+    }
+
+    .item:hover, .item.selected {
+      background: #252525;
+      border-left-color: #d97706;
+    }
+
+    .item.selected {
+      background: rgba(217, 119, 6, 0.15);
+    }
+
+    .item-icon {
+      width: 32px;
+      height: 32px;
+      background: #2a2a2a;
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .item-icon svg {
+      width: 18px;
+      height: 18px;
+      color: #d97706;
+    }
+
+    .item-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .item-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #e0e0e0;
+    }
+
+    .item-path {
+      font-size: 11px;
+      color: #666;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: #555;
+    }
+
+    .empty svg {
+      width: 40px;
+      height: 40px;
+      margin-bottom: 12px;
+      opacity: 0.3;
+    }
+
+    .footer {
+      display: flex;
+      gap: 16px;
+      padding: 10px 20px;
+      background: #1a1a1a;
+      border-top: 1px solid #333;
+      font-size: 11px;
+      color: #555;
+    }
+
+    .footer kbd {
+      padding: 2px 6px;
+      background: #2a2a2a;
+      border-radius: 3px;
+      font-family: monospace;
+      margin-right: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="search-box">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+      <input type="text" id="search" placeholder="Rechercher un projet..." autofocus>
+      <span class="shortcut">Esc fermer</span>
+    </div>
+    <div class="list" id="list"></div>
+    <div class="footer">
+      <span><kbd>↑↓</kbd> Naviguer</span>
+      <span><kbd>Enter</kbd> Ouvrir</span>
+    </div>
+  </div>
+
+  <script>
+    const { ipcRenderer } = require('electron');
+    const fs = require('fs');
+    const path = require('path');
+    const os = require('os');
+
+    const projectsFile = path.join(os.homedir(), '.claude-terminal', 'projects.json');
+
+    let projects = [];
+    let filtered = [];
+    let selectedIndex = 0;
+
+    // Charger les projets
+    function loadProjects() {
+      try {
+        if (fs.existsSync(projectsFile)) {
+          projects = JSON.parse(fs.readFileSync(projectsFile, 'utf8'));
+        }
+      } catch (e) {
+        projects = [];
+      }
+      filtered = [...projects];
+      render();
+    }
+
+    function render() {
+      const list = document.getElementById('list');
+
+      if (filtered.length === 0) {
+        list.innerHTML = `
+          <div class="empty">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+            <p>Aucun projet</p>
+          </div>`;
+        return;
+      }
+
+      list.innerHTML = filtered.map((p, i) => `
+        <div class="item ${i === selectedIndex ? 'selected' : ''}" data-index="${i}">
+          <div class="item-icon">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+          </div>
+          <div class="item-info">
+            <div class="item-name">${p.name}</div>
+            <div class="item-path">${p.path}</div>
+          </div>
+        </div>
+      `).join('');
+
+      list.querySelectorAll('.item').forEach(item => {
+        item.onclick = () => selectProject(parseInt(item.dataset.index));
+      });
+
+      // Scroll to selected
+      const selected = list.querySelector('.selected');
+      if (selected) selected.scrollIntoView({ block: 'nearest' });
+    }
+
+    function filter(query) {
+      const q = query.toLowerCase();
+      if (!q) {
+        filtered = [...projects];
+      } else {
+        filtered = projects.filter(p =>
+          p.name.toLowerCase().includes(q) ||
+          p.path.toLowerCase().includes(q)
+        );
+      }
+      selectedIndex = 0;
+      render();
+    }
+
+    function selectProject(index) {
+      const project = filtered[index];
+      if (project) {
+        ipcRenderer.send('quick-pick-select', project);
+      }
+    }
+
+    // Events
+    document.getElementById('search').addEventListener('input', (e) => {
+      filter(e.target.value);
+    });
+
+    document.addEventListener('keydown', (e) => {
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          selectedIndex = Math.min(selectedIndex + 1, filtered.length - 1);
+          render();
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          selectedIndex = Math.max(selectedIndex - 1, 0);
+          render();
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (filtered.length > 0) selectProject(selectedIndex);
+          break;
+        case 'Escape':
+          e.preventDefault();
+          ipcRenderer.send('quick-pick-close');
+          break;
+      }
+    });
+
+    // Recharger les projets à chaque fois que la fenêtre devient visible
+    window.addEventListener('focus', () => {
+      document.getElementById('search').value = '';
+      loadProjects();
+      document.getElementById('search').focus();
+    });
+
+    loadProjects();
+  </script>
+</body>
+</html>
