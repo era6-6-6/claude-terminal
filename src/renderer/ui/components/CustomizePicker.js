@@ -118,6 +118,15 @@ function getAllColors() {
 }
 
 /**
+ * Check if a color is in the preset palette
+ */
+function isPresetColor(color) {
+  if (!color) return false;
+  const allColors = getAllColors();
+  return allColors.some(c => c.value && c.value.toLowerCase() === color.toLowerCase());
+}
+
+/**
  * Create the picker HTML
  */
 function createPickerHtml(itemType, item) {
@@ -181,6 +190,18 @@ function createPickerHtml(itemType, item) {
               </div>
             </div>
           `).join('')}
+          <!-- Custom color picker -->
+          <div class="customize-picker-group customize-picker-custom-group">
+            <div class="customize-picker-custom-row">
+              <div class="customize-color-custom ${currentColor && !isPresetColor(currentColor) ? 'selected' : ''}"
+                   style="--swatch-color: ${currentColor && !isPresetColor(currentColor) ? currentColor : '#808080'}">
+                <input type="color" class="customize-color-input" value="${currentColor || '#808080'}" title="Choisir une couleur">
+                <svg class="plus-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                ${currentColor && !isPresetColor(currentColor) ? '<svg class="check-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>' : ''}
+              </div>
+              <span class="customize-picker-custom-label">Personnalise</span>
+            </div>
+          </div>
         </div>
 
         <!-- Icons panel -->
@@ -339,11 +360,18 @@ function setupEventHandlers(picker, itemType, itemId, item, callbacks) {
     btn.onclick = () => {
       const color = btn.dataset.color || null;
 
-      // Update UI
+      // Update UI - clear all selections including custom
       picker.querySelectorAll('.customize-color-btn').forEach(b => {
         b.classList.remove('selected');
         b.innerHTML = '';
       });
+      const customColorEl = picker.querySelector('.customize-color-custom');
+      if (customColorEl) {
+        customColorEl.classList.remove('selected');
+        const checkIcon = customColorEl.querySelector('.check-icon');
+        if (checkIcon) checkIcon.remove();
+      }
+
       btn.classList.add('selected');
       btn.innerHTML = '<svg class="check-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>';
 
@@ -357,6 +385,42 @@ function setupEventHandlers(picker, itemType, itemId, item, callbacks) {
       }
     };
   });
+
+  // Custom color picker
+  const customColorInput = picker.querySelector('.customize-color-input');
+  const customColorEl = picker.querySelector('.customize-color-custom');
+  if (customColorInput && customColorEl) {
+    customColorInput.oninput = (e) => {
+      const color = e.target.value;
+
+      // Update UI - clear preset selections
+      picker.querySelectorAll('.customize-color-btn').forEach(b => {
+        b.classList.remove('selected');
+        b.innerHTML = '';
+      });
+
+      // Update custom swatch
+      customColorEl.style.setProperty('--swatch-color', color);
+      customColorEl.classList.add('selected');
+      if (!customColorEl.querySelector('.check-icon')) {
+        customColorEl.insertAdjacentHTML('beforeend', '<svg class="check-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>');
+      }
+
+      // Update preview
+      const preview = picker.querySelector('.customize-picker-preview');
+      preview.style.setProperty('--preview-color', color);
+
+      // Callback
+      if (callbacks.onColorChange) {
+        callbacks.onColorChange(itemId, color);
+      }
+    };
+
+    customColorEl.onclick = (e) => {
+      if (e.target === customColorInput) return;
+      customColorInput.click();
+    };
+  }
 
   // Icon selection
   picker.querySelectorAll('.customize-icon-btn').forEach(btn => {
