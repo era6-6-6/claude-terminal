@@ -184,6 +184,62 @@ function createTerminalKeyHandler(terminal, terminalId, inputChannel = 'terminal
       });
       return false;
     }
+
+    // FiveM-specific shortcuts
+    if (inputChannel === 'fivem-input' && e.type === 'keydown') {
+      const projectIndex = terminalId;
+      const fivemId = fivemConsoleIds.get(projectIndex);
+      const wrapper = fivemId ? document.querySelector(`.terminal-wrapper[data-id="${fivemId}"]`) : null;
+
+      // Ctrl+E: Toggle resources view
+      if (e.ctrlKey && !e.shiftKey && !e.altKey && e.key.toLowerCase() === 'e') {
+        if (wrapper) {
+          const resourcesTab = wrapper.querySelector('.fivem-view-tab[data-view="resources"]');
+          const consoleTab = wrapper.querySelector('.fivem-view-tab[data-view="console"]');
+          const resourcesView = wrapper.querySelector('.fivem-resources-view');
+
+          if (resourcesView && resourcesView.style.display !== 'none') {
+            // Already on resources, switch back to console
+            consoleTab?.click();
+          } else {
+            // Switch to resources
+            resourcesTab?.click();
+          }
+        }
+        return false;
+      }
+
+      // Resource shortcuts (F keys, Ctrl+number, etc.)
+      if (!['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) {
+        let shortcut = '';
+        if (e.ctrlKey) shortcut += 'Ctrl+';
+        if (e.altKey) shortcut += 'Alt+';
+        if (e.shiftKey) shortcut += 'Shift+';
+
+        let keyName = e.key;
+        if (keyName === ' ') keyName = 'Space';
+        else if (keyName.length === 1) keyName = keyName.toUpperCase();
+
+        shortcut += keyName;
+
+        // Check if this matches a resource shortcut
+        const resourceName = findResourceByShortcut(projectIndex, shortcut);
+        if (resourceName) {
+          // Execute ensure command
+          api.fivem.resourceCommand({ projectIndex, command: `ensure ${resourceName}` })
+            .catch(err => console.error('Shortcut ensure failed:', err));
+
+          // Flash visual feedback
+          const resourceItem = wrapper?.querySelector(`.fivem-resource-item[data-name="${resourceName}"]`);
+          if (resourceItem) {
+            resourceItem.classList.add('shortcut-triggered');
+            setTimeout(() => resourceItem.classList.remove('shortcut-triggered'), 300);
+          }
+          return false;
+        }
+      }
+    }
+
     // Let xterm handle other keys
     return true;
   };
@@ -790,10 +846,7 @@ function createFivemConsole(project, projectIndex, options = {}) {
   // Update error badge with existing errors
   updateFivemErrorBadge(wrapper, projectIndex);
 
-  // Setup resource shortcut listener
-  setupResourceShortcutListener(projectIndex, wrapper);
-
-  // Custom key handler for global shortcuts and copy/paste
+  // Custom key handler for global shortcuts, copy/paste, and resource shortcuts
   terminal.attachCustomKeyEventHandler(createTerminalKeyHandler(terminal, projectIndex, 'fivem-input'));
 
   // Handle input to FiveM console
@@ -1271,63 +1324,6 @@ function captureResourceShortcut(btn, projectIndex, resourceName, wrapper, proje
   };
 
   document.addEventListener('keydown', handleKeyDown, true);
-}
-
-// Store active FiveM console info for shortcut handling
-let activeResourceShortcutHandler = null;
-
-/**
- * Setup resource shortcut listener for a FiveM console
- */
-function setupResourceShortcutListener(projectIndex, wrapper) {
-  // Remove previous handler if exists
-  if (activeResourceShortcutHandler) {
-    document.removeEventListener('keydown', activeResourceShortcutHandler);
-  }
-
-  activeResourceShortcutHandler = async (e) => {
-    // Only handle if FiveM console is focused/visible
-    const activeTermData = getActiveTerminal();
-    if (!activeTermData || activeTermData.type !== 'fivem' || activeTermData.projectIndex !== projectIndex) {
-      return;
-    }
-
-    // Build shortcut string
-    let shortcut = '';
-    if (e.ctrlKey) shortcut += 'Ctrl+';
-    if (e.altKey) shortcut += 'Alt+';
-    if (e.shiftKey) shortcut += 'Shift+';
-
-    // Get key name
-    let keyName = e.key;
-    if (keyName === ' ') keyName = 'Space';
-    else if (keyName.length === 1) keyName = keyName.toUpperCase();
-    else if (['Control', 'Shift', 'Alt', 'Meta'].includes(keyName)) return;
-
-    shortcut += keyName;
-
-    // Find resource with this shortcut
-    const resourceName = findResourceByShortcut(projectIndex, shortcut);
-    if (resourceName) {
-      e.preventDefault();
-      e.stopPropagation();
-
-      // Execute ensure command
-      try {
-        await api.fivem.resourceCommand({ projectIndex, command: `ensure ${resourceName}` });
-        // Flash visual feedback
-        const resourceItem = wrapper?.querySelector(`.fivem-resource-item[data-name="${resourceName}"]`);
-        if (resourceItem) {
-          resourceItem.classList.add('shortcut-triggered');
-          setTimeout(() => resourceItem.classList.remove('shortcut-triggered'), 300);
-        }
-      } catch (err) {
-        console.error('Shortcut ensure failed:', err);
-      }
-    }
-  };
-
-  document.addEventListener('keydown', activeResourceShortcutHandler);
 }
 
 /**
