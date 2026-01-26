@@ -43,7 +43,7 @@ const {
   initializeState,
 
   // Services
-  services: { DashboardService, FivemService },
+  services: { DashboardService, FivemService, TimeTrackingDashboard },
 
   // UI Components
   ProjectList,
@@ -1236,6 +1236,10 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     if (tabId === 'mcp') loadMcps();
     if (tabId === 'dashboard') populateDashboardProjects();
     if (tabId === 'memory') loadMemory();
+    if (tabId === 'timetracking') {
+      const container = document.getElementById('timetracking-container');
+      if (container) TimeTrackingDashboard.init(container);
+    }
     if (tabId === 'claude') {
       const activeId = terminalsState.get().activeTerminal;
       if (activeId) {

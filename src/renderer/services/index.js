@@ -10,6 +10,7 @@ const McpService = require('./McpService');
 const FivemService = require('./FivemService');
 const DashboardService = require('./DashboardService');
 const SettingsService = require('./SettingsService');
+const TimeTrackingDashboard = require('./TimeTrackingDashboard');
 
 module.exports = {
   ProjectService,
@@ -19,5 +20,6 @@ module.exports = {
   McpService,
   FivemService,
   DashboardService,
-  SettingsService
+  SettingsService,
+  TimeTrackingDashboard
 };
