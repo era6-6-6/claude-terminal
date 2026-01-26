@@ -256,6 +256,30 @@
       "install": "Install"
     }
   },
+  "timetracking": {
+    "title": "Time Tracking",
+    "totalTime": "Total time",
+    "today": "Today",
+    "thisWeek": "This week",
+    "thisMonth": "This month",
+    "yesterday": "Yesterday",
+    "lastWeek": "Last week",
+    "lastMonth": "Last month",
+    "day": "Day",
+    "week": "Week",
+    "month": "Month",
+    "evolution": "Evolution",
+    "byProject": "By project",
+    "recentSessions": "Recent sessions",
+    "globalSummary": "Global summary",
+    "streak": "day streak",
+    "avgPerDay": "avg/day",
+    "sessions": "sessions",
+    "topProject": "top project",
+    "noActivity": "No activity for this period",
+    "noSession": "No session for this period",
+    "of8h": "of 8h"
+  },
   "errors": {
     "corruptedFile": "Projects file corrupted",
     "backupCreated": "A backup was created: {filename}",
