@@ -19,16 +19,16 @@
       <span class="titlebar-title">Claude Terminal</span>
     </div>
     <!-- Usage Display -->
-    <div class="titlebar-usage" id="titlebar-usage" title="Cliquez pour actualiser">
+    <div class="titlebar-usage" id="titlebar-usage" data-i18n-title="common.refresh">
       <div class="usage-item" data-type="session">
-        <span class="usage-label">Session</span>
+        <span class="usage-label" data-i18n="ui.session">Session</span>
         <div class="usage-bar-container">
           <div class="usage-bar" id="usage-bar-session" style="width: 0%"></div>
         </div>
         <span class="usage-percent" id="usage-percent-session">--%</span>
       </div>
       <div class="usage-item" data-type="weekly">
-        <span class="usage-label">Weekly</span>
+        <span class="usage-label" data-i18n="ui.weekly">Weekly</span>
         <div class="usage-bar-container">
           <div class="usage-bar" id="usage-bar-weekly" style="width: 0%"></div>
         </div>
@@ -43,20 +43,20 @@
       </div>
     </div>
     <!-- Time Tracking Display -->
-    <div class="titlebar-time" id="titlebar-time" title="Temps de travail">
+    <div class="titlebar-time" id="titlebar-time" data-i18n-title="ui.workTime">
       <svg class="time-icon" viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
         <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
       </svg>
       <div class="time-item" data-period="today">
-        <span class="time-label">Today</span>
+        <span class="time-label" data-i18n="common.today">Today</span>
         <span class="time-value" id="time-today">0h</span>
       </div>
       <div class="time-item" data-period="week">
-        <span class="time-label">Week</span>
+        <span class="time-label" data-i18n="timetracking.week">Week</span>
         <span class="time-value" id="time-week">0h</span>
       </div>
       <div class="time-item" data-period="month">
-        <span class="time-label">Month</span>
+        <span class="time-label" data-i18n="timetracking.month">Month</span>
         <span class="time-value" id="time-month">0h</span>
       </div>
     </div>
@@ -79,13 +79,13 @@
       <svg class="update-icon" viewBox="0 0 24 24" fill="currentColor">
         <path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.5-9.12 0-12.6 3.51-3.47 9.14-3.47 12.65 0L21 3v7.12z"/>
       </svg>
-      <span class="update-message" id="update-message">Une nouvelle version est disponible</span>
+      <span class="update-message" id="update-message" data-i18n="ui.newVersion">Une nouvelle version est disponible</span>
       <div class="update-progress-container" id="update-progress-container" style="display: none;">
         <div class="update-progress-bar" id="update-progress-bar"></div>
         <span class="update-progress-text" id="update-progress-text">0%</span>
       </div>
-      <button class="update-btn" id="update-btn" style="display: none;">Redémarrer pour mettre à jour</button>
-      <button class="update-dismiss" id="update-dismiss" title="Fermer">
+      <button class="update-btn" id="update-btn" style="display: none;" data-i18n="ui.restartToUpdate">Redémarrer pour mettre à jour</button>
+      <button class="update-dismiss" id="update-dismiss" data-i18n-title="common.close">
         <svg viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
       </button>
     </div>
@@ -136,21 +136,21 @@
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/>
           </svg>
-          <span>Memoire</span>
+          <span data-i18n="ui.memory">Mémoire</span>
         </button>
       </nav>
       <div class="sidebar-footer">
-        <button class="notification-toggle active" id="btn-notifications" title="Notifications">
+        <button class="notification-toggle active" id="btn-notifications" data-i18n-title="ui.notifications">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M12 22c1.1 0 2-.9 2-2h-4c0 1.1.9 2 2 2zm6-6v-5c0-3.07-1.63-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.64 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2zm-2 1H8v-6c0-2.48 1.51-4.5 4-4.5s4 2.02 4 4.5v6z"/>
           </svg>
-          <span>Notifications</span>
+          <span data-i18n="ui.notifications">Notifications</span>
         </button>
-        <button class="settings-btn" id="btn-settings" title="Parametres">
+        <button class="settings-btn" id="btn-settings" data-i18n-title="settings.button">
           <svg viewBox="0 0 24 24" fill="currentColor">
             <path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/>
           </svg>
-          <span>Parametres</span>
+          <span data-i18n="settings.button">Paramètres</span>
         </button>
         <span class="version" id="app-version"></span>
       </div>
@@ -164,12 +164,12 @@
           <!-- Projects Panel -->
           <div class="projects-panel">
             <div class="panel-header">
-              <h2>Projets</h2>
+              <h2 data-i18n="projects.title">Projets</h2>
               <div class="panel-actions">
-                <button class="btn-icon" id="btn-new-folder" title="Nouveau dossier">
+                <button class="btn-icon" id="btn-new-folder" data-i18n-title="projects.newFolder">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3h-3v-2h3V9h2v3h3v2z"/></svg>
                 </button>
-                <button class="btn-icon" id="btn-new-project" title="Nouveau projet">
+                <button class="btn-icon" id="btn-new-project" data-i18n-title="common.new">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
                 </button>
               </div>
@@ -181,34 +181,34 @@
           <div class="terminals-panel">
             <div class="terminals-header">
               <div class="terminals-filter" id="terminals-filter" style="display: none;">
-                <span class="filter-label">Terminaux de</span>
+                <span class="filter-label" data-i18n="ui.terminalsOf">Terminaux de</span>
                 <span class="filter-project" id="filter-project-name"></span>
 
                 <div class="filter-git-actions" id="filter-git-actions" style="display: none;">
                   <div class="filter-divider"></div>
-                  <button class="filter-git-btn" id="filter-btn-pull" title="Git Pull">
+                  <button class="filter-git-btn" id="filter-btn-pull" data-i18n-title="projects.gitPull">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M17 11l-5 5-5-5"/><path d="M5 21h14"/></svg>
                     Pull
                   </button>
-                  <button class="filter-git-btn" id="filter-btn-push" title="Git Push">
+                  <button class="filter-git-btn" id="filter-btn-push" data-i18n-title="projects.gitPush">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21V9"/><path d="M7 14l5-5 5 5"/><path d="M5 3h14"/></svg>
                     Push
                   </button>
                   <div class="filter-divider"></div>
-                  <button class="filter-git-btn filter-btn-changes" id="filter-btn-changes" title="Voir les changements">
+                  <button class="filter-git-btn filter-btn-changes" id="filter-btn-changes" data-i18n-title="ui.viewChanges">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>
                     <span>Changes</span>
                     <span class="changes-count" id="changes-count" style="display: none;">0</span>
                   </button>
                   <div class="filter-divider"></div>
-                  <button class="filter-branch-btn" id="filter-btn-branch" title="Changer de branche">
+                  <button class="filter-branch-btn" id="filter-btn-branch" data-i18n-title="ui.switchBranch">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></svg>
                     <span id="filter-branch-name">main</span>
                     <svg class="branch-arrow" viewBox="0 0 12 12"><path d="M3 5l3 3 3-3" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
                   </button>
                 </div>
 
-                <button class="filter-clear" id="btn-show-all" title="Afficher tous les terminaux">
+                <button class="filter-clear" id="btn-show-all" data-i18n-title="ui.showAllTerminals">
                   <svg viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
                 </button>
               </div>
@@ -216,7 +216,7 @@
               <!-- Quick Actions Bar -->
               <div class="quick-actions-bar" id="quick-actions-bar" style="display: none;">
                 <div class="quick-actions-list" id="quick-actions-list"></div>
-                <button class="quick-actions-config" id="btn-config-quick-actions" title="Configurer les Quick Actions">
+                <button class="quick-actions-config" id="btn-config-quick-actions" data-i18n-title="quickActions.configure">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
                 </button>
               </div>
@@ -224,7 +224,7 @@
               <!-- Branch Dropdown -->
               <div class="branch-dropdown" id="branch-dropdown">
                 <div class="branch-dropdown-header">
-                  <span>Changer de branche</span>
+                  <span data-i18n="ui.switchBranch">Changer de branche</span>
                 </div>
                 <div class="branch-dropdown-list" id="branch-dropdown-list"></div>
               </div>
@@ -234,14 +234,14 @@
                 <div class="git-changes-header">
                   <div class="git-changes-title">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                    <span>Changements</span>
+                    <span data-i18n="ui.changes">Changements</span>
                     <span class="git-changes-project" id="git-changes-project"></span>
                   </div>
                   <div class="git-changes-actions">
-                    <button class="btn-icon btn-small" id="btn-refresh-changes" title="Rafraichir">
+                    <button class="btn-icon btn-small" id="btn-refresh-changes" data-i18n-title="common.refresh">
                       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
                     </button>
-                    <button class="btn-icon btn-small" id="btn-close-changes" title="Fermer">
+                    <button class="btn-icon btn-small" id="btn-close-changes" data-i18n-title="common.close">
                       <svg viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
                     </button>
                   </div>
@@ -249,23 +249,23 @@
                 <div class="git-changes-toolbar">
                   <label class="git-select-all">
                     <input type="checkbox" id="git-select-all">
-                    <span>Tout selectionner</span>
+                    <span data-i18n="ui.selectAll">Tout sélectionner</span>
                   </label>
                   <div class="git-changes-stats" id="git-changes-stats"></div>
                 </div>
                 <div class="git-changes-list" id="git-changes-list">
-                  <div class="git-changes-loading">Chargement...</div>
+                  <div class="git-changes-loading" data-i18n="common.loading">Chargement...</div>
                 </div>
                 <div class="git-commit-section">
                   <div class="git-commit-header">
-                    <span>Message de commit</span>
+                    <span data-i18n="ui.commitMessage">Message de commit</span>
                     <div class="git-skill-selector">
-                      <select id="git-commit-skill" title="Skill pour generer le message">
-                        <option value="">-- Skill --</option>
+                      <select id="git-commit-skill" data-i18n-title="ui.skillForMessage">
+                        <option value="" data-i18n="ui.selectSkill">-- Skill --</option>
                       </select>
-                      <button class="btn-generate" id="btn-generate-commit" title="Generer avec le skill">
+                      <button class="btn-generate" id="btn-generate-commit" data-i18n-title="ui.generateWithSkill">
                         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 9l-7 7-7-7"/></svg>
-                        Generer
+                        <span data-i18n="ui.generate">Générer</span>
                       </button>
                     </div>
                   </div>
@@ -273,11 +273,11 @@
                   <div class="git-commit-actions">
                     <button class="btn-secondary" id="btn-stage-selected">
                       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                      Stage
+                      <span data-i18n="ui.stage">Stage</span>
                     </button>
                     <button class="btn-primary" id="btn-commit-selected" disabled>
                       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-                      Commit (<span id="commit-count">0</span>)
+                      <span data-i18n="ui.commit">Commit</span> (<span id="commit-count">0</span>)
                     </button>
                   </div>
                 </div>
@@ -289,8 +289,8 @@
                 <svg viewBox="0 0 24 24" fill="currentColor">
                   <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.89 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/>
                 </svg>
-                <p>Selectionnez un projet et cliquez sur "Claude Code"</p>
-                <p class="hint">Le terminal s'ouvrira ici</p>
+                <p data-i18n="terminals.selectProject">Sélectionnez un projet et cliquez sur "Claude Code"</p>
+                <p class="hint" data-i18n="terminals.terminalOpensHere">Le terminal s'ouvrira ici</p>
               </div>
             </div>
 
@@ -304,7 +304,7 @@
                     <span class="project-detail-path" id="project-detail-path"></span>
                   </div>
                 </div>
-                <button class="btn-close-detail" id="btn-close-detail" title="Fermer">
+                <button class="btn-close-detail" id="btn-close-detail" data-i18n-title="common.close">
                   <svg viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
                 </button>
               </div>
@@ -326,7 +326,7 @@
             <h2>Skills</h2>
             <button class="btn-primary" id="btn-new-skill">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-              Nouveau Skill
+              <span data-i18n="ui.newSkill">Nouveau Skill</span>
             </button>
           </div>
           <div class="list-container" id="skills-list"></div>
@@ -340,7 +340,7 @@
             <h2>Agents</h2>
             <button class="btn-primary" id="btn-new-agent">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-              Nouvel Agent
+              <span data-i18n="ui.newAgent">Nouvel Agent</span>
             </button>
           </div>
           <div class="list-container" id="agents-list"></div>
@@ -352,7 +352,7 @@
         <div class="dashboard-layout">
           <div class="dashboard-sidebar">
             <div class="dashboard-sidebar-header">
-              <h3>Projets</h3>
+              <h3 data-i18n="projects.title">Projets</h3>
             </div>
             <div class="dashboard-projects-list" id="dashboard-projects-list"></div>
           </div>
@@ -360,7 +360,7 @@
             <div class="dashboard-content" id="dashboard-content">
               <div class="dashboard-empty">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 13h8V3H3v10zm0 8h8v-6H3v6zm10 0h8V11h-8v10zm0-18v6h8V3h-8z"/></svg>
-                <p>Selectionnez un projet pour voir son dashboard</p>
+                <p data-i18n="ui.selectProjectForDashboard">Sélectionnez un projet pour voir son dashboard</p>
               </div>
             </div>
           </div>
@@ -379,10 +379,10 @@
         <div class="mcp-layout">
           <div class="mcp-main">
             <div class="list-header">
-              <h2>Serveurs MCP</h2>
+              <h2 data-i18n="ui.mcpServers">Serveurs MCP</h2>
               <button class="btn-primary" id="btn-new-mcp">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                Nouveau MCP
+                <span data-i18n="ui.newMcp">Nouveau MCP</span>
               </button>
             </div>
             <div class="mcp-list" id="mcp-list"></div>
@@ -391,20 +391,20 @@
             <div class="mcp-logs-header">
               <div class="mcp-logs-title">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg>
-                <span>Logs</span>
+                <span data-i18n="ui.logs">Logs</span>
                 <span class="mcp-logs-name" id="mcp-logs-name"></span>
               </div>
               <div class="mcp-logs-actions">
-                <button class="btn-icon btn-small" id="btn-clear-logs" title="Effacer les logs">
+                <button class="btn-icon btn-small" id="btn-clear-logs" data-i18n-title="ui.clearLogs">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
                 </button>
-                <button class="btn-icon btn-small" id="btn-toggle-logs" title="Reduire">
+                <button class="btn-icon btn-small" id="btn-toggle-logs" data-i18n-title="ui.reduce">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"/></svg>
                 </button>
               </div>
             </div>
             <div class="mcp-logs-content" id="mcp-logs-content">
-              <div class="mcp-logs-empty">Selectionnez un MCP pour voir ses logs</div>
+              <div class="mcp-logs-empty" data-i18n="ui.selectMcpForLogs">Sélectionnez un MCP pour voir ses logs</div>
             </div>
           </div>
         </div>
@@ -415,27 +415,27 @@
         <div class="memory-layout">
           <div class="memory-sidebar">
             <div class="memory-sidebar-header">
-              <h3>Sources</h3>
+              <h3 data-i18n="ui.sources">Sources</h3>
               <div class="memory-search">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-                <input type="text" id="memory-search-input" placeholder="Rechercher...">
+                <input type="text" id="memory-search-input" data-i18n-placeholder="common.search">
               </div>
             </div>
             <div class="memory-sources-list" id="memory-sources-list">
               <div class="memory-source-item active" data-source="global">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-                <span>Memoire Globale</span>
+                <span data-i18n="ui.globalMemory">Mémoire Globale</span>
               </div>
               <div class="memory-source-item" data-source="settings">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-                <span>Settings Claude</span>
+                <span data-i18n="ui.claudeSettings">Settings Claude</span>
               </div>
               <div class="memory-source-item" data-source="commands">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>
-                <span>Commandes</span>
+                <span data-i18n="ui.commands">Commandes</span>
               </div>
               <div class="memory-source-divider">
-                <span>Projets</span>
+                <span data-i18n="projects.title">Projets</span>
               </div>
               <div id="memory-projects-list"></div>
             </div>
@@ -443,32 +443,32 @@
           <div class="memory-main">
             <div class="memory-header">
               <div class="memory-title">
-                <h2 id="memory-title">Memoire Globale</h2>
+                <h2 id="memory-title" data-i18n="ui.globalMemory">Mémoire Globale</h2>
                 <span class="memory-path" id="memory-path">~/.claude/CLAUDE.md</span>
               </div>
               <div class="memory-stats" id="memory-stats"></div>
               <div class="memory-actions">
-                <button class="btn-secondary" id="btn-memory-refresh" title="Rafraichir">
+                <button class="btn-secondary" id="btn-memory-refresh" data-i18n-title="common.refresh">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
                 </button>
-                <button class="btn-secondary" id="btn-memory-open" title="Ouvrir dans l'explorateur">
+                <button class="btn-secondary" id="btn-memory-open" data-i18n-title="ui.openInExplorer">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7V3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7zM14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/></svg>
                 </button>
-                <button class="btn-secondary btn-template" id="btn-memory-template" title="Inserer un template" style="display: none;">
+                <button class="btn-secondary btn-template" id="btn-memory-template" data-i18n-title="ui.insertTemplate" style="display: none;">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
                 </button>
                 <button class="btn-primary" id="btn-memory-edit">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-                  Editer
+                  <span data-i18n="common.edit">Editer</span>
                 </button>
                 <button class="btn-primary btn-create" id="btn-memory-create" style="display: none;">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                  Creer CLAUDE.md
+                  <span data-i18n="ui.createClaudeMd">Créer CLAUDE.md</span>
                 </button>
               </div>
             </div>
             <div class="memory-content" id="memory-content">
-              <div class="memory-loading">Chargement...</div>
+              <div class="memory-loading" data-i18n="common.loading">Chargement...</div>
             </div>
           </div>
         </div>
@@ -498,14 +498,14 @@
     <div class="quick-picker">
       <div class="quick-picker-search">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
-        <input type="text" id="quick-picker-input" placeholder="Rechercher un projet..." autocomplete="off">
+        <input type="text" id="quick-picker-input" data-i18n-placeholder="quickPicker.searchProjects" autocomplete="off">
         <span class="quick-picker-shortcut">Ctrl+Shift+P</span>
       </div>
       <div class="quick-picker-list" id="quick-picker-list"></div>
       <div class="quick-picker-footer">
-        <span><kbd>↑↓</kbd> Naviguer</span>
-        <span><kbd>Enter</kbd> Ouvrir</span>
-        <span><kbd>Esc</kbd> Fermer</span>
+        <span><kbd>↑↓</kbd> <span data-i18n="ui.navigate">Naviguer</span></span>
+        <span><kbd>Enter</kbd> <span data-i18n="ui.open">Ouvrir</span></span>
+        <span><kbd>Esc</kbd> <span data-i18n="common.close">Fermer</span></span>
       </div>
     </div>
   </div>
@@ -519,8 +519,8 @@
       <div class="modal-header" id="input-modal-title">Titre</div>
       <input type="text" class="modal-input" id="input-modal-input" placeholder="">
       <div class="modal-actions">
-        <button class="btn-secondary" id="input-modal-cancel">Annuler</button>
-        <button class="btn-primary" id="input-modal-confirm">Confirmer</button>
+        <button class="btn-secondary" id="input-modal-cancel" data-i18n="common.cancel">Annuler</button>
+        <button class="btn-primary" id="input-modal-confirm" data-i18n="common.confirm">Confirmer</button>
       </div>
     </div>
   </div>
@@ -529,32 +529,32 @@
   <div class="modal-overlay" id="create-modal">
     <div class="modal create-modal">
       <div class="modal-header">
-        <h3 id="create-modal-title">Nouveau Skill</h3>
-        <button class="btn-icon modal-close" id="create-modal-close">
+        <h3 id="create-modal-title" data-i18n="ui.newSkill">Nouveau Skill</h3>
+        <button class="btn-icon modal-close" id="create-modal-close" data-i18n-title="common.close">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
         </button>
       </div>
       <div class="modal-body">
         <div class="create-modal-intro">
-          <p>Decrivez ce que vous voulez creer et Claude generera le code pour vous.</p>
+          <p data-i18n="ui.describeWhatToCreate">Décrivez ce que vous voulez créer et Claude générera le code pour vous.</p>
         </div>
         <div class="create-modal-field">
-          <label for="create-modal-description">Description</label>
-          <textarea id="create-modal-description" placeholder="Ex: Un skill qui genere des tests unitaires pour du code TypeScript en utilisant Vitest..." rows="4"></textarea>
+          <label for="create-modal-description" data-i18n="ui.description">Description</label>
+          <textarea id="create-modal-description" data-i18n-placeholder="ui.skillPlaceholder" rows="4"></textarea>
         </div>
         <div class="create-modal-field">
-          <label>Projet cible</label>
+          <label data-i18n="ui.targetProject">Projet cible</label>
           <select id="create-modal-project">
-            <option value="">Selectionnez un projet...</option>
+            <option value="" data-i18n="ui.selectProject">Sélectionnez un projet...</option>
           </select>
-          <p class="field-hint">Le skill/agent sera cree dans le terminal de ce projet</p>
+          <p class="field-hint" data-i18n="ui.skillAgentHint">Le skill/agent sera créé dans le terminal de ce projet</p>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn-secondary" id="create-modal-cancel">Annuler</button>
+        <button class="btn-secondary" id="create-modal-cancel" data-i18n="common.cancel">Annuler</button>
         <button class="btn-primary btn-create-with-claude" id="create-modal-submit">
           <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
-          Creer avec Claude
+          <span data-i18n="ui.createWithClaude">Créer avec Claude</span>
         </button>
       </div>
     </div>

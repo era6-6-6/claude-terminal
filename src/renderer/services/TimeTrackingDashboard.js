@@ -5,6 +5,7 @@
 
 const { projectsState, getGlobalTimes, getProjectTimes } = require('../state');
 const { escapeHtml } = require('../utils');
+const { t } = require('../i18n');
 
 // Current state
 let currentPeriod = 'week'; // 'day', 'week', 'month'
@@ -60,29 +61,30 @@ function formatDurationLarge(ms) {
  */
 function getPeriodLabel() {
   const now = new Date();
+  const locale = t('language.code') === 'fr' ? 'fr-FR' : 'en-US';
 
   if (currentPeriod === 'day') {
     const date = new Date(now);
     date.setDate(date.getDate() + currentOffset);
-    if (currentOffset === 0) return "Aujourd'hui";
-    if (currentOffset === -1) return "Hier";
-    return date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
+    if (currentOffset === 0) return t('timetracking.today');
+    if (currentOffset === -1) return t('timetracking.yesterday');
+    return date.toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long' });
   }
 
   if (currentPeriod === 'week') {
-    if (currentOffset === 0) return "Cette semaine";
-    if (currentOffset === -1) return "Semaine dernière";
+    if (currentOffset === 0) return t('timetracking.thisWeek');
+    if (currentOffset === -1) return t('timetracking.lastWeek');
     const weekStart = getWeekStart(currentOffset);
     const weekEnd = new Date(weekStart);
     weekEnd.setDate(weekEnd.getDate() + 6);
-    return `${weekStart.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })} - ${weekEnd.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })}`;
+    return `${weekStart.toLocaleDateString(locale, { day: 'numeric', month: 'short' })} - ${weekEnd.toLocaleDateString(locale, { day: 'numeric', month: 'short' })}`;
   }
 
   if (currentPeriod === 'month') {
     const date = new Date(now.getFullYear(), now.getMonth() + currentOffset, 1);
-    if (currentOffset === 0) return "Ce mois";
-    if (currentOffset === -1) return "Mois dernier";
-    return date.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
+    if (currentOffset === 0) return t('timetracking.thisMonth');
+    if (currentOffset === -1) return t('timetracking.lastMonth');
+    return date.toLocaleDateString(locale, { month: 'long', year: 'numeric' });
   }
 
   return '';
@@ -245,7 +247,9 @@ function getDailyData() {
   const globalSessions = getGlobalSessionsForPeriod();
   const { periodStart, periodEnd } = getPeriodBoundaries();
   const days = [];
-  const dayNames = ['Dim', 'Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam'];
+  const locale = t('language.code') === 'fr' ? 'fr-FR' : 'en-US';
+  // Get localized short day names
+  const getDayName = (date) => date.toLocaleDateString(locale, { weekday: 'short' });
 
   if (currentPeriod === 'day') {
     // For day view, group by 2-hour blocks (12 bars)
@@ -262,7 +266,7 @@ function getDailyData() {
     while (current < periodEnd) {
       days.push({
         date: new Date(current),
-        label: dayNames[current.getDay()],
+        label: getDayName(current),
         time: 0
       });
       current.setDate(current.getDate() + 1);
@@ -423,6 +427,7 @@ function render(container) {
   const sessionCount = getSessionCount();
   const { sessions: projectSessions } = getSessionsForPeriod();
   const dayStats = getDayStats();
+  const locale = t('language.code') === 'fr' ? 'fr-FR' : 'en-US';
 
   // Calculate percentages based on project time breakdown
   const totalProjectTime = projectBreakdown.reduce((sum, p) => sum + p.time, 0);
@@ -443,7 +448,7 @@ function render(container) {
             <svg viewBox="0 0 24 24" fill="currentColor">
               <path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/>
             </svg>
-            Time Tracking
+            ${t('timetracking.title')}
           </h1>
         </div>
 
@@ -458,9 +463,9 @@ function render(container) {
         </div>
 
         <div class="tt-period-selector">
-          <button class="tt-period-btn ${currentPeriod === 'day' ? 'active' : ''}" data-period="day">Jour</button>
-          <button class="tt-period-btn ${currentPeriod === 'week' ? 'active' : ''}" data-period="week">Semaine</button>
-          <button class="tt-period-btn ${currentPeriod === 'month' ? 'active' : ''}" data-period="month">Mois</button>
+          <button class="tt-period-btn ${currentPeriod === 'day' ? 'active' : ''}" data-period="day">${t('timetracking.day')}</button>
+          <button class="tt-period-btn ${currentPeriod === 'week' ? 'active' : ''}" data-period="week">${t('timetracking.week')}</button>
+          <button class="tt-period-btn ${currentPeriod === 'month' ? 'active' : ''}" data-period="month">${t('timetracking.month')}</button>
         </div>
       </header>
 
@@ -475,7 +480,7 @@ function render(container) {
               <span class="tt-hero-minutes">${minutes.toString().padStart(2, '0')}</span>
               <span class="tt-hero-unit">m</span>
             </div>
-            <div class="tt-hero-label">Temps total</div>
+            <div class="tt-hero-label">${t('timetracking.totalTime')}</div>
             <div class="tt-hero-sublabel">${getPeriodLabel()}</div>
           </div>
         </div>
@@ -489,28 +494,28 @@ function render(container) {
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-4H8v-2h2V9h2v2h2v2h-2v4z"/></svg>
             </div>
             <div class="tt-stat-value">${sessionCount}</div>
-            <div class="tt-stat-label">sessions</div>
+            <div class="tt-stat-label">${t('timetracking.sessions')}</div>
           </div>
           <div class="tt-stat-item">
             <div class="tt-stat-icon tt-stat-start">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
             </div>
-            <div class="tt-stat-value">${dayStats.firstSession ? dayStats.firstSession.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-            <div class="tt-stat-label">début</div>
+            <div class="tt-stat-value">${dayStats.firstSession ? dayStats.firstSession.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+            <div class="tt-stat-label">${locale === 'fr-FR' ? 'début' : 'start'}</div>
           </div>
           <div class="tt-stat-item">
             <div class="tt-stat-icon tt-stat-end">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
             </div>
-            <div class="tt-stat-value">${dayStats.lastSession ? dayStats.lastSession.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
-            <div class="tt-stat-label">fin</div>
+            <div class="tt-stat-value">${dayStats.lastSession ? dayStats.lastSession.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+            <div class="tt-stat-label">${locale === 'fr-FR' ? 'fin' : 'end'}</div>
           </div>
           <div class="tt-stat-item">
             <div class="tt-stat-icon tt-stat-projects">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
             </div>
             <div class="tt-stat-value">${dayStats.projectCount}</div>
-            <div class="tt-stat-label">projets</div>
+            <div class="tt-stat-label">${locale === 'fr-FR' ? 'projets' : 'projects'}</div>
           </div>
           ` : `
           <!-- Week/Month view stats -->
@@ -519,21 +524,21 @@ function render(container) {
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67zM11.71 19c-1.78 0-3.22-1.4-3.22-3.14 0-1.62 1.05-2.76 2.81-3.12 1.77-.36 3.6-1.21 4.62-2.58.39 1.29.59 2.65.59 4.04 0 2.65-2.15 4.8-4.8 4.8z"/></svg>
             </div>
             <div class="tt-stat-value">${streak}</div>
-            <div class="tt-stat-label">jours de suite</div>
+            <div class="tt-stat-label">${t('timetracking.streak')}</div>
           </div>
           <div class="tt-stat-item">
             <div class="tt-stat-icon tt-stat-avg">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17h18v2H3v-2zm0-7h18v5H3v-5zm0-4h18v2H3V6z"/></svg>
             </div>
             <div class="tt-stat-value">${formatDuration(avgDaily)}</div>
-            <div class="tt-stat-label">moyenne/jour</div>
+            <div class="tt-stat-label">${t('timetracking.avgPerDay')}</div>
           </div>
           <div class="tt-stat-item">
             <div class="tt-stat-icon tt-stat-sessions">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 14h-2v-4H8v-2h2V9h2v2h2v2h-2v4z"/></svg>
             </div>
             <div class="tt-stat-value">${sessionCount}</div>
-            <div class="tt-stat-label">sessions</div>
+            <div class="tt-stat-label">${t('timetracking.sessions')}</div>
           </div>
           ${mostActive ? `
           <div class="tt-stat-item tt-stat-project">
@@ -541,7 +546,7 @@ function render(container) {
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
             </div>
             <div class="tt-stat-value tt-stat-project-name">${escapeHtml(mostActive.project.name.length > 10 ? mostActive.project.name.substring(0, 10) + '...' : mostActive.project.name)}</div>
-            <div class="tt-stat-label">projet #1</div>
+            <div class="tt-stat-label">${t('timetracking.topProject')}</div>
           </div>
           ` : `
           <div class="tt-stat-item">
@@ -549,7 +554,7 @@ function render(container) {
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
             </div>
             <div class="tt-stat-value">-</div>
-            <div class="tt-stat-label">projet #1</div>
+            <div class="tt-stat-label">${t('timetracking.topProject')}</div>
           </div>
           `}
           `}
@@ -560,7 +565,7 @@ function render(container) {
           <div class="tt-card-header">
             <h3>
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.5 18.49l6-6.01 4 4L22 6.92l-1.41-1.41-7.09 7.97-4-4L2 16.99z"/></svg>
-              Évolution
+              ${t('timetracking.evolution')}
             </h3>
           </div>
           <div class="tt-chart">
@@ -588,14 +593,14 @@ function render(container) {
           <div class="tt-card-header">
             <h3>
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
-              Par projet
+              ${t('timetracking.byProject')}
             </h3>
           </div>
           <div class="tt-projects-list">
             ${projectBreakdown.length === 0 ? `
               <div class="tt-projects-empty">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                <p>Aucune activité sur cette période</p>
+                <p>${t('timetracking.noActivity')}</p>
               </div>
             ` : projectBreakdown.map((project, i) => {
               const percentage = totalProjectTime > 0 ? (project.time / totalProjectTime) * 100 : 0;
@@ -622,13 +627,13 @@ function render(container) {
           <div class="tt-card-header">
             <h3>
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
-              Sessions récentes
+              ${t('timetracking.recentSessions')}
             </h3>
           </div>
           <div class="tt-sessions-list">
             ${projectSessions.length === 0 ? `
               <div class="tt-sessions-empty">
-                <p>Aucune session sur cette période</p>
+                <p>${t('timetracking.noSession')}</p>
               </div>
             ` : projectSessions.slice(0, 10).map((session, i) => {
               const startDate = new Date(session.startTime);
@@ -637,8 +642,8 @@ function render(container) {
                 <div class="tt-session-item" style="animation-delay: ${i * 30}ms">
                   <div class="tt-session-color" style="background: ${session.projectColor}"></div>
                   <div class="tt-session-project">${escapeHtml(session.projectName)}</div>
-                  <div class="tt-session-date">${startDate.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric' })}</div>
-                  <div class="tt-session-hours">${startDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</div>
+                  <div class="tt-session-date">${startDate.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' })}</div>
+                  <div class="tt-session-hours">${startDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</div>
                   <div class="tt-session-duration">${formatDuration(session.duration, true)}</div>
                 </div>
               `;
@@ -651,20 +656,20 @@ function render(container) {
           <div class="tt-card-header">
             <h3>
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
-              Résumé global
+              ${t('timetracking.globalSummary')}
             </h3>
           </div>
           <div class="tt-global-grid">
             <div class="tt-global-item ${currentPeriod === 'day' && currentOffset === 0 ? 'active' : ''}">
-              <span class="tt-global-label">Aujourd'hui</span>
+              <span class="tt-global-label">${t('timetracking.today')}</span>
               <span class="tt-global-value tt-accent">${formatDuration(globalTimes.today, true)}</span>
             </div>
             <div class="tt-global-item ${currentPeriod === 'week' && currentOffset === 0 ? 'active' : ''}">
-              <span class="tt-global-label">Cette semaine</span>
+              <span class="tt-global-label">${t('timetracking.thisWeek')}</span>
               <span class="tt-global-value">${formatDuration(globalTimes.week, true)}</span>
             </div>
             <div class="tt-global-item ${currentPeriod === 'month' && currentOffset === 0 ? 'active' : ''}">
-              <span class="tt-global-label">Ce mois</span>
+              <span class="tt-global-label">${t('timetracking.thisMonth')}</span>
               <span class="tt-global-value">${formatDuration(globalTimes.month, true)}</span>
             </div>
           </div>

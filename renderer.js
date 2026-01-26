@@ -99,6 +99,33 @@ const localState = {
   selectedDashboardProject: null
 };
 
+// ========== I18N STATIC TEXT UPDATES ==========
+// Update all elements with data-i18n attribute
+function updateStaticTranslations() {
+  // Text content: data-i18n="key"
+  document.querySelectorAll('[data-i18n]').forEach(el => {
+    const key = el.getAttribute('data-i18n');
+    if (key) el.textContent = t(key);
+  });
+
+  // Title attribute: data-i18n-title="key"
+  document.querySelectorAll('[data-i18n-title]').forEach(el => {
+    const key = el.getAttribute('data-i18n-title');
+    if (key) el.title = t(key);
+  });
+
+  // Placeholder attribute: data-i18n-placeholder="key"
+  document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+    const key = el.getAttribute('data-i18n-placeholder');
+    if (key) el.placeholder = t(key);
+  });
+}
+
+// Listen for language changes
+onLanguageChange(() => {
+  updateStaticTranslations();
+});
+
 // ========== DEFAULT KEYBOARD SHORTCUTS ==========
 // Labels will be resolved using t() when needed
 const DEFAULT_SHORTCUTS = {
@@ -446,6 +473,7 @@ function registerAllShortcuts() {
 ensureDirectories();
 initializeState(); // This loads settings, projects AND initializes time tracking
 initI18n(settingsState.get().language); // Initialize i18n with saved language preference
+updateStaticTranslations(); // Apply translations to static HTML elements
 applyAccentColor(settingsState.get().accentColor || '#d97706');
 
 // ========== NOTIFICATIONS ==========
