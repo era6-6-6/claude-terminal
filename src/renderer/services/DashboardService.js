@@ -420,7 +420,7 @@ function buildGitStatusHtml(gitInfo) {
   if (stashes && stashes.length > 0) {
     stashesHtml = `
       <div class="dashboard-mini-section">
-        <span class="mini-label"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 21h14v-2H5v2zm0-4h14v-2H5v2zm0-4h14v-2H5v2zm0-4h14V7H5v2zm0-6v2h14V3H5z"/></svg> ${stashes.length} stash${stashes.length > 1 ? 'es' : ''}</span>
+        <span class="mini-label"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 21h14v-2H5v2zm0-4h14v-2H5v2zm0-4h14v-2H5v2zm0-4h14V7H5v2zm0-6v2h14V3H5z"/></svg> ${stashes.length} ${t('git.stashes')}</span>
       </div>
     `;
   }
@@ -431,7 +431,7 @@ function buildGitStatusHtml(gitInfo) {
     tagHtml = `
       <div class="dashboard-mini-section">
         <span class="mini-label"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.41 11.58l-9-9C12.05 2.22 11.55 2 11 2H4c-1.1 0-2 .9-2 2v7c0 .55.22 1.05.59 1.42l9 9c.36.36.86.58 1.41.58.55 0 1.05-.22 1.41-.59l7-7c.37-.36.59-.86.59-1.41 0-.55-.23-1.06-.59-1.42zM5.5 7C4.67 7 4 6.33 4 5.5S4.67 4 5.5 4 7 4.67 7 5.5 6.33 7 5.5 7z"/></svg> ${latestTag.name}</span>
-        ${latestTag.commitsBehind > 0 ? `<span class="tag-behind">+${latestTag.commitsBehind} commits</span>` : ''}
+        ${latestTag.commitsBehind > 0 ? `<span class="tag-behind">${t('dashboard.tagCommitsBehind', { count: latestTag.commitsBehind })}</span>` : ''}
       </div>
     `;
   }
@@ -441,7 +441,7 @@ function buildGitStatusHtml(gitInfo) {
       <div class="git-branch">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 2a3 3 0 0 0-3 3c0 1.28.81 2.38 1.94 2.81A4 4 0 0 0 9 12H6a3 3 0 0 0 0 6 3 3 0 0 0 2.94-2.41A4 4 0 0 0 13 12v-1.17A3 3 0 0 0 15 8a3 3 0 0 0-3-3 3 3 0 0 0-2.24 1.01A4 4 0 0 0 6 2z"/></svg>
         <span class="branch-name">${branch}</span>
-        <span class="branch-count">${(branches?.local?.length || 0) + (branches?.remote?.length || 0) || 1} branche${((branches?.local?.length || 0) + (branches?.remote?.length || 0) || 1) > 1 ? 's' : ''}</span>
+        <span class="branch-count">${(branches?.local?.length || 0) + (branches?.remote?.length || 0) || 1} ${t('git.branches')}</span>
       </div>
       <div class="git-sync-status">${buildSyncBadges(aheadBehind)}</div>
     </div>
@@ -474,9 +474,9 @@ function buildStatsHtml(stats, gitInfo) {
           <div class="ext-row">
             <span class="ext-name">${ext}</span>
             <div class="ext-bar-container">
-              <div class="ext-bar" style="width: ${((data?.lines || 0) / maxLines * 100)}%"></div>
+              <div class="ext-bar" data-bar-width="${((data?.lines || 0) / maxLines * 100).toFixed(1)}%" style="width: 0"></div>
             </div>
-            <span class="ext-stats">${formatNumber(data?.files || 0)} fichiers - ${formatNumber(data?.lines || 0)} lignes</span>
+            <span class="ext-stats">${t('dashboard.extFiles', { count: formatNumber(data?.files || 0), lines: formatNumber(data?.lines || 0) })}</span>
           </div>
         `).join('')}
       </div>
@@ -488,16 +488,16 @@ function buildStatsHtml(stats, gitInfo) {
       <h3><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zM9 17H7v-7h2v7zm4 0h-2V7h2v10zm4 0h-2v-4h2v4z"/></svg> ${t('dashboard.codeStats')}</h3>
       <div class="code-stats-grid">
         <div class="code-stat">
-          <div class="code-stat-value">${formatNumber(stats.lines)}</div>
+          <div class="code-stat-value" data-count-to="${stats.lines || 0}">0</div>
           <div class="code-stat-label">${t('dashboard.linesOfCode')}</div>
         </div>
         <div class="code-stat">
-          <div class="code-stat-value">${formatNumber(stats.files)}</div>
+          <div class="code-stat-value" data-count-to="${stats.files || 0}">0</div>
           <div class="code-stat-label">${t('dashboard.sourceFiles')}</div>
         </div>
         ${gitInfo.isGitRepo ? `
         <div class="code-stat">
-          <div class="code-stat-value">${formatNumber(gitInfo.totalCommits)}</div>
+          <div class="code-stat-value" data-count-to="${gitInfo.totalCommits || 0}">0</div>
           <div class="code-stat-label">${t('dashboard.totalCommits')}</div>
         </div>
         ` : ''}
@@ -522,7 +522,7 @@ function buildContributorsHtml(contributors) {
         ${contributors.map(c => `
           <div class="contributor-item">
             <span class="contributor-name">${escapeHtml(c.name)}</span>
-            <span class="contributor-commits">${c.commits} commits</span>
+            <span class="contributor-commits">${c.commits} ${t('git.commits')}</span>
           </div>
         `).join('')}
       </div>
@@ -567,12 +567,12 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
       </div>
       <div class="merge-alert-files">
         ${gitOps.conflicts.slice(0, 5).map(f => `<code>${escapeHtml(f)}</code>`).join('')}
-        ${gitOps.conflicts.length > 5 ? `<span class="more-files">+${gitOps.conflicts.length - 5} autres</span>` : ''}
+        ${gitOps.conflicts.length > 5 ? `<span class="more-files">${t('git.andMore', { count: gitOps.conflicts.length - 5 })}</span>` : ''}
       </div>
       <div class="merge-alert-hint">${t('git.resolveConflicts')}</div>
     </div>
     ` : ''}
-    <div class="dashboard-project-header">
+    <div class="dashboard-project-header" data-animate="0">
       <div class="dashboard-project-title">
         <h2>${escapeHtml(project.name)}</h2>
         <span class="dashboard-project-type ${isFivem ? 'fivem' : ''}">${isFivem ? t('dashboard.fivemServer') : t('dashboard.standalone')}</span>
@@ -585,16 +585,16 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
         ${gitInfo.isGitRepo && gitInfo.aheadBehind?.hasRemote ? `
         <button class="btn-secondary" id="dash-btn-git-pull" ${!gitInfo.aheadBehind?.notTracking && gitInfo.aheadBehind?.behind === 0 ? 'disabled' : ''}>
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8z"/></svg>
-          Pull
+          ${t('dashboard.pull')}
         </button>
         <button class="btn-secondary" id="dash-btn-git-push" ${!gitInfo.aheadBehind?.notTracking && gitInfo.aheadBehind?.ahead === 0 ? 'disabled' : ''}>
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M5 4v2h14V4H5zm0 10h4v6h6v-6h4l-7-7-7 7z"/></svg>
-          Push
+          ${t('dashboard.push')}
         </button>
         ${hasMergeConflict ? `
         <button class="btn-danger" id="dash-btn-merge-abort">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
-          Abort Merge
+          ${t('dashboard.abortMerge')}
         </button>
         ` : ''}
         ` : ''}
@@ -605,10 +605,10 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
       </div>
     </div>
 
-    <div class="dashboard-quick-stats">
+    <div class="dashboard-quick-stats" data-animate="1">
       <div class="quick-stat">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.89 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg>
-        <span>${terminalCount} terminal${terminalCount > 1 ? 's' : ''}</span>
+        <span>${terminalCount} ${t('dashboard.terminals')}</span>
       </div>
       <div class="quick-stat time-stat">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z"/></svg>
@@ -630,14 +630,14 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
       ` : ''}
     </div>
 
-    <div class="dashboard-path-bar">
+    <div class="dashboard-path-bar" data-animate="2">
       <code>${escapeHtml(project.path)}</code>
-      <button class="btn-icon-small btn-copy-path" title="Copier">
+      <button class="btn-icon-small btn-copy-path" title="${t('dashboard.copyPath')}">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M16 1H4c-1.1 0-2 .9-2 2v14h2V3h12V1zm3 4H8c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h11c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm0 16H8V7h11v14z"/></svg>
       </button>
     </div>
 
-    <div class="dashboard-grid">
+    <div class="dashboard-grid" data-animate="3">
       <div class="dashboard-col">
         ${buildGitStatusHtml(gitInfo)}
       </div>
@@ -661,7 +661,7 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
     const btn = container.querySelector('#dash-btn-git-pull');
     if (!btn) return;
     btn.disabled = true;
-    btn.innerHTML = '<span class="btn-spinner"></span> Pull...';
+    btn.innerHTML = `<span class="btn-spinner"></span> ${t('git.pulling')}`;
     if (onGitPull) await onGitPull(project.id);
     // Invalidate cache and re-render
     invalidateCache(project.id);
@@ -672,7 +672,7 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
     const btn = container.querySelector('#dash-btn-git-push');
     if (!btn) return;
     btn.disabled = true;
-    btn.innerHTML = '<span class="btn-spinner"></span> Push...';
+    btn.innerHTML = `<span class="btn-spinner"></span> ${t('git.pushing')}`;
     if (onGitPush) await onGitPush(project.id);
     // Invalidate cache and re-render
     invalidateCache(project.id);
@@ -683,7 +683,7 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
     const btn = container.querySelector('#dash-btn-merge-abort');
     if (!btn) return;
     btn.disabled = true;
-    btn.innerHTML = '<span class="btn-spinner"></span> Annulation...';
+    btn.innerHTML = `<span class="btn-spinner"></span> ${t('git.aborting')}`;
     if (onMergeAbort) await onMergeAbort(project.id);
     // Invalidate cache and re-render
     invalidateCache(project.id);
@@ -694,6 +694,130 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
     navigator.clipboard.writeText(project.path);
     if (onCopyPath) onCopyPath(project.path);
   });
+}
+
+/**
+ * Animate a counter element from 0 to target value
+ * @param {HTMLElement} el - Element to animate
+ * @param {number} target - Target number
+ * @param {number} duration - Animation duration in ms
+ */
+function animateCounter(el, target, duration = 600) {
+  if (!el || target === 0) {
+    if (el) el.textContent = '0';
+    return;
+  }
+
+  const start = performance.now();
+
+  function easeOutCubic(t) {
+    return 1 - Math.pow(1 - t, 3);
+  }
+
+  function tick(now) {
+    const elapsed = now - start;
+    const progress = Math.min(elapsed / duration, 1);
+    const easedProgress = easeOutCubic(progress);
+    const current = Math.round(easedProgress * target);
+    el.textContent = current.toLocaleString('fr-FR');
+
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+    }
+  }
+
+  requestAnimationFrame(tick);
+}
+
+/**
+ * Animate dashboard sections, counters and bars into view
+ * @param {HTMLElement} container - Dashboard container
+ */
+function animateDashboardIn(container) {
+  // Stagger sections with data-animate
+  const sections = container.querySelectorAll('[data-animate]');
+  sections.forEach(section => {
+    const index = parseInt(section.dataset.animate, 10);
+    section.style.opacity = '0';
+    section.style.transform = 'translateY(8px)';
+    section.style.transition = 'opacity 250ms ease, transform 250ms ease';
+
+    setTimeout(() => {
+      section.style.opacity = '1';
+      section.style.transform = 'translateY(0)';
+    }, 50 + index * 60);
+  });
+
+  // Animate counters
+  const counters = container.querySelectorAll('[data-count-to]');
+  counters.forEach(el => {
+    const target = parseInt(el.dataset.countTo, 10) || 0;
+    animateCounter(el, target, 600);
+  });
+
+  // Animate extension bars after a delay
+  const bars = container.querySelectorAll('[data-bar-width]');
+  setTimeout(() => {
+    bars.forEach(bar => {
+      bar.style.transition = 'width 500ms cubic-bezier(0.22, 1, 0.36, 1)';
+      bar.style.width = bar.dataset.barWidth;
+    });
+  }, 300);
+}
+
+/**
+ * Transition between old and new dashboard content with cross-fade
+ * @param {HTMLElement} container - Dashboard container
+ * @param {Object} project - Project data
+ * @param {Object} data - Dashboard data
+ * @param {Object} options - Render options
+ * @param {boolean} isRefreshing - Show refresh indicator
+ */
+function transitionDashboard(container, project, data, options, isRefreshing = false) {
+  const hasExistingContent = container.querySelector('.dashboard-project-header');
+
+  if (!hasExistingContent) {
+    // No existing content - render directly with entrance animations
+    renderDashboardHtml(container, project, data, options, isRefreshing);
+    animateDashboardIn(container);
+    return;
+  }
+
+  // Cross-fade: wrap old content, create new content, fade
+  const wrapper = document.createElement('div');
+  wrapper.className = 'dashboard-transition-wrapper';
+  wrapper.style.position = 'relative';
+
+  // Capture old content
+  const outgoing = document.createElement('div');
+  outgoing.className = 'dashboard-outgoing';
+  outgoing.innerHTML = container.innerHTML;
+  wrapper.appendChild(outgoing);
+
+  // Create incoming content (hidden)
+  const incoming = document.createElement('div');
+  incoming.className = 'dashboard-incoming';
+  wrapper.appendChild(incoming);
+
+  // Replace container with wrapper
+  container.innerHTML = '';
+  container.appendChild(wrapper);
+
+  // Render new content into incoming (just for visual)
+  renderDashboardHtml(incoming, project, data, options, isRefreshing);
+
+  // Trigger cross-fade
+  requestAnimationFrame(() => {
+    outgoing.classList.add('fade-out');
+    incoming.classList.add('fade-in');
+  });
+
+  // After fade completes, replace with final rendered content (with event listeners)
+  setTimeout(() => {
+    container.innerHTML = '';
+    renderDashboardHtml(container, project, data, options, isRefreshing);
+    animateDashboardIn(container);
+  }, 220);
 }
 
 /**
@@ -711,8 +835,8 @@ async function renderDashboard(container, project, options = {}) {
 
   // Case 1: We have cached data - show it immediately
   if (cachedData) {
-    // Render with cached data, show refresh indicator if cache is stale
-    renderDashboardHtml(container, project, cachedData, options, !cacheValid && !alreadyRefreshing);
+    // Use cross-fade transition when switching projects (existing content visible)
+    transitionDashboard(container, project, cachedData, options, !cacheValid && !alreadyRefreshing);
 
     // If cache is still valid or already refreshing, we're done
     if (cacheValid || alreadyRefreshing) {
@@ -726,7 +850,7 @@ async function renderDashboard(container, project, options = {}) {
       const newData = await loadDashboardData(project.path);
       setCacheData(projectId, newData);
 
-      // Only update UI if this project is still displayed
+      // Only update UI if this project is still displayed — discrete refresh, no animation
       if (container.querySelector('#dash-btn-open-folder')) {
         renderDashboardHtml(container, project, newData, options, false);
       }
@@ -751,6 +875,7 @@ async function renderDashboard(container, project, options = {}) {
     const data = await loadDashboardData(project.path);
     setCacheData(projectId, data);
     renderDashboardHtml(container, project, data, options, false);
+    animateDashboardIn(container);
   } catch (e) {
     console.error('Error loading dashboard:', e);
     setCacheLoading(projectId, false);

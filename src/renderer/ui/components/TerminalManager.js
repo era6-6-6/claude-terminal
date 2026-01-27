@@ -37,7 +37,7 @@ const {
   hasTerminalsForProject
 } = require('../../state');
 const { escapeHtml } = require('../../utils');
-const { t } = require('../../i18n');
+const { t, getCurrentLanguage } = require('../../i18n');
 const {
   CLAUDE_TERMINAL_THEME,
   FIVEM_TERMINAL_THEME,
@@ -553,7 +553,7 @@ async function createTerminal(project, options = {}) {
     if (!result.success) {
       console.error('Failed to create terminal:', result.error);
       if (callbacks.onNotification) {
-        callbacks.onNotification('❌ Erreur', result.error || 'Impossible de créer le terminal', null);
+        callbacks.onNotification(`❌ ${t('common.error')}`, result.error || t('terminals.createError'), null);
       }
       return null;
     }
@@ -788,7 +788,7 @@ function createFivemConsole(project, projectIndex, options = {}) {
       <div class="fivem-errors-view" style="display: none;">
         <div class="fivem-errors-header">
           <span>${t('fivem.errorDetected')}</span>
-          <button class="fivem-clear-errors" title="Effacer les erreurs">
+          <button class="fivem-clear-errors" title="${t('fivem.clearErrors')}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
           </button>
         </div>
@@ -815,7 +815,7 @@ function createFivemConsole(project, projectIndex, options = {}) {
         </div>
         <div class="fivem-resources-loading" style="display: none;">
           <div class="spinner"></div>
-          <span>Scanning...</span>
+          <span>${t('fivem.scanning')}</span>
         </div>
       </div>
     </div>
@@ -1537,11 +1537,12 @@ function formatRelativeTime(dateString) {
   const diffHours = Math.floor(diffMs / 3600000);
   const diffDays = Math.floor(diffMs / 86400000);
 
-  if (diffMins < 1) return "a l'instant";
-  if (diffMins < 60) return `il y a ${diffMins}min`;
-  if (diffHours < 24) return `il y a ${diffHours}h`;
-  if (diffDays < 7) return `il y a ${diffDays}j`;
-  return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  if (diffMins < 1) return t('time.justNow');
+  if (diffMins < 60) return t('time.minutesAgo', { count: diffMins });
+  if (diffHours < 24) return t('time.hoursAgo', { count: diffHours });
+  if (diffDays < 7) return t('time.daysAgo', { count: diffDays });
+  const locale = getCurrentLanguage() === 'fr' ? 'fr-FR' : 'en-US';
+  return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 }
 
 /**
@@ -1578,7 +1579,7 @@ async function renderSessionsPanel(project, emptyState) {
         </div>
         <div class="session-prompt">${escapeHtml(truncateText(session.firstPrompt, 80))}</div>
         <div class="session-meta">
-          <span class="session-messages">${session.messageCount} msgs</span>
+          <span class="session-messages">${t('terminals.messages', { count: session.messageCount })}</span>
           <span class="session-time">${formatRelativeTime(session.modified)}</span>
           ${session.gitBranch ? `<span class="session-branch">${escapeHtml(session.gitBranch)}</span>` : ''}
         </div>
@@ -1645,7 +1646,7 @@ async function resumeSession(project, sessionId, options = {}) {
     if (!result.success) {
       console.error('Failed to resume session:', result.error);
       if (callbacks.onNotification) {
-        callbacks.onNotification('❌ Erreur', result.error || 'Impossible de reprendre la session', null);
+        callbacks.onNotification(`❌ ${t('common.error')}`, result.error || t('terminals.resumeError'), null);
       }
       return null;
     }
@@ -1865,13 +1866,13 @@ function showFivemErrorOverlay(projectIndex, error) {
  * @returns {string}
  */
 function buildDebugPrompt(error) {
-  let prompt = `J'ai cette erreur FiveM/Lua, aide-moi a la resoudre :\n\n`;
+  let prompt = t('fivem.debugPrompt');
   prompt += '```\n';
   prompt += error.message;
   prompt += '\n```\n';
 
   if (error.context && error.context !== error.message) {
-    prompt += `\nContexte (logs precedents) :\n`;
+    prompt += t('fivem.debugContext');
     prompt += '```\n';
     prompt += error.context;
     prompt += '\n```';

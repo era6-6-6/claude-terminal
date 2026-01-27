@@ -5,6 +5,7 @@
 
 // Use preload API instead of direct ipcRenderer
 const api = window.electron_api;
+const { t } = require('../i18n');
 const { fs } = window.electron_nodeModules;
 const {
   getMcps,
@@ -153,16 +154,16 @@ function saveMcps(mcps) {
  */
 async function startMcp(id) {
   const mcp = getMcp(id);
-  if (!mcp) return { success: false, error: 'MCP not found' };
+  if (!mcp) return { success: false, error: t('mcp.notFound') };
 
   setMcpProcessStatus(id, 'starting');
-  addMcpLog(id, 'info', `Starting ${mcp.name}...`);
+  addMcpLog(id, 'info', t('mcp.starting', { name: mcp.name }));
 
   try {
     // HTTP servers are external - just mark as running
     if (mcp.type === 'http') {
       setMcpProcessStatus(id, 'running');
-      addMcpLog(id, 'info', `HTTP server available at ${mcp.url}`);
+      addMcpLog(id, 'info', t('mcp.httpAvailable', { url: mcp.url }));
       return { success: true };
     }
 
@@ -176,10 +177,10 @@ async function startMcp(id) {
 
     if (result.success) {
       setMcpProcessStatus(id, 'running');
-      addMcpLog(id, 'info', 'Started successfully');
+      addMcpLog(id, 'info', t('mcp.started'));
     } else {
       setMcpProcessStatus(id, 'error');
-      addMcpLog(id, 'stderr', result.error || 'Failed to start');
+      addMcpLog(id, 'stderr', result.error || t('mcp.startFailed'));
     }
 
     return result;
@@ -197,19 +198,19 @@ async function startMcp(id) {
  */
 async function stopMcp(id) {
   const mcp = getMcp(id);
-  addMcpLog(id, 'info', 'Stopping...');
+  addMcpLog(id, 'info', t('mcp.stopping'));
 
   try {
     // HTTP servers are external - just mark as stopped
     if (mcp && mcp.type === 'http') {
       setMcpProcessStatus(id, 'stopped');
-      addMcpLog(id, 'info', 'Disconnected');
+      addMcpLog(id, 'info', t('mcp.disconnected'));
       return { success: true };
     }
 
     const result = await api.mcp.stop({ id });
     setMcpProcessStatus(id, 'stopped');
-    addMcpLog(id, 'info', 'Stopped');
+    addMcpLog(id, 'info', t('mcp.stopped'));
     return result;
   } catch (e) {
     addMcpLog(id, 'stderr', e.message);

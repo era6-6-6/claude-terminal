@@ -1116,9 +1116,9 @@ body {
 .branch-dropdown {
   position: absolute;
   top: 100%;
-  left: 0;
-  min-width: 220px;
-  max-height: 300px;
+  right: 0;
+  min-width: 260px;
+  max-height: 340px;
   background: var(--bg-secondary);
   border: 1px solid var(--border-color);
   border-radius: var(--radius);
@@ -1144,22 +1144,7 @@ body {
 
 .branch-dropdown-list {
   overflow-y: auto;
-  max-height: 250px;
-}
-
-.branch-dropdown-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  cursor: pointer;
-  transition: background 0.15s;
-  font-size: 13px;
-  color: var(--text-primary);
-}
-
-.branch-dropdown-item:hover {
-  background: var(--bg-hover);
+  max-height: 290px;
 }
 
 .branch-dropdown-item.current {
@@ -1216,6 +1201,197 @@ body {
   height: 14px;
   color: var(--accent);
   flex-shrink: 0;
+}
+
+/* Branch dropdown header with create button */
+.branch-dropdown-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.branch-create-btn {
+  background: none;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 3px 5px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.branch-create-btn:hover {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+/* Create branch input row */
+.branch-create-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.branch-create-input {
+  flex: 1;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius);
+  color: var(--text-primary);
+  font-size: 12px;
+  padding: 5px 8px;
+  outline: none;
+  font-family: inherit;
+}
+
+.branch-create-input:focus {
+  border-color: var(--accent);
+}
+
+.branch-create-confirm {
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  color: white;
+  cursor: pointer;
+  padding: 4px 6px;
+  display: flex;
+  align-items: center;
+  transition: opacity 0.15s;
+}
+
+.branch-create-confirm:hover {
+  opacity: 0.85;
+}
+
+.branch-create-confirm:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Branch item with actions */
+.branch-dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+  font-size: 13px;
+  color: var(--text-primary);
+  position: relative;
+}
+
+.branch-dropdown-item:hover {
+  background: var(--bg-hover);
+}
+
+.branch-dropdown-item-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.branch-dropdown-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.branch-dropdown-item:hover .branch-dropdown-actions {
+  opacity: 1;
+}
+
+.branch-action-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 3px;
+  display: flex;
+  align-items: center;
+  transition: all 0.15s;
+}
+
+.branch-action-btn:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-color);
+  color: var(--text-primary);
+}
+
+.branch-merge-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
+.branch-delete-btn:hover {
+  color: #e74c3c;
+  border-color: #e74c3c;
+}
+
+.branch-action-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Delete confirmation inline */
+.branch-dropdown-item.confirm-delete {
+  background: rgba(231, 76, 60, 0.08);
+  flex-wrap: wrap;
+}
+
+.branch-delete-confirm-row {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+  margin-top: 6px;
+}
+
+.branch-confirm-yes {
+  background: #e74c3c;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.branch-confirm-yes:hover {
+  opacity: 0.85;
+}
+
+.branch-confirm-no {
+  background: var(--bg-hover);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  padding: 3px 10px;
+  font-size: 11px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.branch-confirm-no:hover {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
 }
 
 .loading-spinner {
@@ -5810,7 +5986,36 @@ body {
   height: 100%;
   background: var(--accent);
   border-radius: 4px;
-  transition: width 0.3s ease;
+  transition: width 500ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Dashboard transition (cross-fade) */
+.dashboard-transition-wrapper {
+  position: relative;
+  min-height: 200px;
+}
+
+.dashboard-outgoing {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  opacity: 1;
+  transition: opacity 200ms ease-out;
+  pointer-events: none;
+}
+
+.dashboard-outgoing.fade-out {
+  opacity: 0;
+}
+
+.dashboard-incoming {
+  opacity: 0;
+  transition: opacity 200ms ease-in;
+}
+
+.dashboard-incoming.fade-in {
+  opacity: 1;
 }
 
 .ext-stats {

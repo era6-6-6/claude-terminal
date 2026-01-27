@@ -35,7 +35,11 @@
     "openClaude": "Ouvrir Claude Code",
     "newFolder": "Nouveau dossier",
     "gitPull": "Git Pull",
-    "gitPush": "Git Push"
+    "gitPush": "Git Push",
+    "confirmDelete": "Supprimer \"{name}\" ?",
+    "filterBatch": "Fichiers batch",
+    "filterExe": "Exécutables",
+    "filterAll": "Tous les fichiers"
   },
   "terminals": {
     "noTerminals": "Aucun terminal pour ce projet",
@@ -45,7 +49,10 @@
     "claudeAwaits": "Claude attend votre réponse",
     "resumeConversation": "Reprendre une conversation",
     "resuming": "Reprise...",
-    "debug": "Debug"
+    "debug": "Debug",
+    "createError": "Impossible de créer le terminal",
+    "resumeError": "Impossible de reprendre la session",
+    "messages": "{count} msgs"
   },
   "fivem": {
     "serverConsole": "Console serveur",
@@ -60,7 +67,11 @@
     "resources": "Resources",
     "noErrors": "Aucune erreur detectee",
     "errorDetected": "Erreur detectee",
+    "clearErrors": "Effacer les erreurs",
     "debugWithClaude": "Debugger avec Claude",
+    "debugPrompt": "J'ai cette erreur FiveM/Lua, aide-moi a la resoudre :\n\n",
+    "debugContext": "\nContexte (logs precedents) :\n",
+    "scanning": "Scan en cours...",
     "noResources": "Aucune resource trouvee",
     "resourcesFound": "{count} resources",
     "ensuredInCfg": "Dans server.cfg",
@@ -76,6 +87,16 @@
     "pressKey": "Appuyez sur une touche...",
     "quickEnsure": "Quick Ensure",
     "noShortcut": "Aucun raccourci"
+  },
+  "mcp": {
+    "notFound": "MCP introuvable",
+    "starting": "Démarrage de {name}...",
+    "httpAvailable": "Serveur HTTP disponible à {url}",
+    "started": "Démarré avec succès",
+    "startFailed": "Échec du démarrage",
+    "stopping": "Arrêt...",
+    "disconnected": "Déconnecté",
+    "stopped": "Arrêté"
   },
   "quickActions": {
     "title": "Quick Actions",
@@ -139,7 +160,10 @@
     "retry": "Reessayer",
     "refreshing": "Actualisation...",
     "fivemServer": "FiveM Server",
-    "standalone": "Standalone"
+    "standalone": "Standalone",
+    "extFiles": "{count} fichiers - {lines} lignes",
+    "copyPath": "Copier",
+    "tagCommitsBehind": "+{count} commits"
   },
   "customize": {
     "title": "Personnaliser l'apparence",

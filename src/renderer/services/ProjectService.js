@@ -5,6 +5,7 @@
 
 // Use preload API instead of direct ipcRenderer
 const api = window.electron_api;
+const { t } = require('../i18n');
 const {
   projectsState,
   getProject,
@@ -52,9 +53,9 @@ async function addFivemProject() {
   // Ask for run command
   const runCommand = await api.dialog.selectFile({
     filters: [
-      { name: 'Batch files', extensions: ['bat', 'cmd'] },
-      { name: 'Executables', extensions: ['exe'] },
-      { name: 'All files', extensions: ['*'] }
+      { name: t('projects.filterBatch'), extensions: ['bat', 'cmd'] },
+      { name: t('projects.filterExe'), extensions: ['exe'] },
+      { name: t('projects.filterAll'), extensions: ['*'] }
     ]
   });
 
@@ -78,7 +79,7 @@ function deleteProjectWithConfirm(projectId, onConfirm) {
   const project = getProject(projectId);
   if (!project) return false;
 
-  if (!confirm(`Supprimer "${project.name}" ?`)) {
+  if (!confirm(t('projects.confirmDelete', { name: project.name }))) {
     return false;
   }
 
