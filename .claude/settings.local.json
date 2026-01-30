@@ -17,7 +17,8 @@
       "Bash(claude --version:*)",
       "Bash(set)",
       "Skill(full-audit)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(du:*)"
     ]
   }
 }
