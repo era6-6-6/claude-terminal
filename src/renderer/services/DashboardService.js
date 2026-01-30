@@ -7,24 +7,8 @@
 const api = window.electron_api;
 const { projectsState, setGitPulling, setGitPushing, setGitMerging, setMergeInProgress, getGitOperation, getProjectTimes } = require('../state');
 const { escapeHtml } = require('../utils');
+const { formatDuration } = require('../utils/format');
 const { t } = require('../i18n');
-
-/**
- * Format duration in milliseconds to human-readable string
- * @param {number} ms - Duration in milliseconds
- * @returns {string}
- */
-function formatDuration(ms) {
-  if (!ms || ms < 60000) return '0m';
-
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-
-  if (hours > 0) {
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
-  return `${minutes}m`;
-}
 
 // ========== CACHE SYSTEM ==========
 const dashboardCache = new Map(); // projectId -> { data, timestamp, loading }

@@ -4396,6 +4396,7 @@ if (usageElements.container) {
 }
 
 // ========== TIME TRACKING DISPLAY ==========
+const { formatDuration: formatTimeDisplay } = require('./src/renderer/utils/format');
 const timeElements = {
   container: document.getElementById('titlebar-time'),
   today: document.getElementById('time-today'),
@@ -4403,28 +4404,7 @@ const timeElements = {
   month: document.getElementById('time-month')
 };
 
-/**
- * Format duration in milliseconds to human-readable string
- * @param {number} ms - Duration in milliseconds
- * @returns {string}
- */
-function formatTimeDisplay(ms) {
-  if (!ms) return '0h';
-
-  // Show seconds for very short durations (< 1 minute)
-  if (ms < 60000) {
-    const seconds = Math.floor(ms / 1000);
-    return seconds > 0 ? `${seconds}s` : '0h';
-  }
-
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-
-  if (hours > 0) {
-    return minutes > 0 ? `${hours}h${minutes.toString().padStart(2, '0')}` : `${hours}h`;
-  }
-  return `${minutes}m`;
-}
+const titlebarFormatOpts = { compact: true, alwaysShowMinutes: false };
 
 /**
  * Update time tracking display in titlebar
@@ -4436,9 +4416,9 @@ function updateTimeDisplay() {
     const { getGlobalTimes } = require('./src/renderer');
     const times = getGlobalTimes();
 
-    timeElements.today.textContent = formatTimeDisplay(times.today);
-    timeElements.week.textContent = formatTimeDisplay(times.week);
-    timeElements.month.textContent = formatTimeDisplay(times.month);
+    timeElements.today.textContent = formatTimeDisplay(times.today, titlebarFormatOpts);
+    timeElements.week.textContent = formatTimeDisplay(times.week, titlebarFormatOpts);
+    timeElements.month.textContent = formatTimeDisplay(times.month, titlebarFormatOpts);
   } catch (e) {
     console.error('[TimeTracking] Error updating display:', e);
   }

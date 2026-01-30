@@ -5,6 +5,7 @@
 
 const { projectsState, getGlobalTimes, getProjectTimes } = require('../state');
 const { escapeHtml } = require('../utils');
+const { formatDuration, formatDurationLarge } = require('../utils/format');
 const { t } = require('../i18n');
 
 // Current state
@@ -14,50 +15,8 @@ let customStartDate = null;
 let customEndDate = null;
 let updateInterval = null;
 let calendarPopup = null;
-
-/**
- * Format duration in milliseconds to human-readable string
- * @param {number} ms - Duration in milliseconds
- * @param {boolean} detailed - Show more detail
- * @returns {string}
- */
-function formatDuration(ms, detailed = false) {
-  if (!ms || ms < 0) ms = 0;
-
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-  const seconds = Math.floor((ms % 60000) / 1000);
-
-  if (detailed) {
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
-    }
-    if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    }
-    return `${seconds}s`;
-  }
-
-  if (hours > 0) {
-    return minutes > 0 ? `${hours}h ${minutes}m` : `${hours}h`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m`;
-  }
-  return '0m';
-}
-
-/**
- * Format duration for large displays
- */
-function formatDurationLarge(ms) {
-  if (!ms || ms < 0) ms = 0;
-
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-
-  return { hours, minutes };
-}
+let calendarOutsideClickHandler = null;
+let calendarEscHandler = null;
 
 /**
  * Get period label based on current period and offset
@@ -658,7 +617,7 @@ function render(container) {
                   <div class="tt-project-bar-container">
                     <div class="tt-project-bar" style="width: ${percentage}%; background: ${project.color}"></div>
                   </div>
-                  <div class="tt-project-time">${formatDuration(project.time, true)}</div>
+                  <div class="tt-project-time">${formatDuration(project.time, { showSeconds: true, alwaysShowMinutes: false })}</div>
                   <div class="tt-project-percent">${Math.round(percentage)}%</div>
                 </div>
               `;
@@ -688,7 +647,7 @@ function render(container) {
                   <div class="tt-session-project">${escapeHtml(session.projectName)}</div>
                   <div class="tt-session-date">${startDate.toLocaleDateString(locale, { weekday: 'short', day: 'numeric' })}</div>
                   <div class="tt-session-hours">${startDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })} - ${endDate.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}</div>
-                  <div class="tt-session-duration">${formatDuration(session.duration, true)}</div>
+                  <div class="tt-session-duration">${formatDuration(session.duration, { showSeconds: true, alwaysShowMinutes: false })}</div>
                 </div>
               `;
             }).join('')}
@@ -706,15 +665,15 @@ function render(container) {
           <div class="tt-global-grid">
             <div class="tt-global-item ${currentPeriod === 'day' && currentOffset === 0 ? 'active' : ''}">
               <span class="tt-global-label">${t('timetracking.today')}</span>
-              <span class="tt-global-value tt-accent">${formatDuration(globalTimes.today, true)}</span>
+              <span class="tt-global-value tt-accent">${formatDuration(globalTimes.today, { showSeconds: true, alwaysShowMinutes: false })}</span>
             </div>
             <div class="tt-global-item ${currentPeriod === 'week' && currentOffset === 0 ? 'active' : ''}">
               <span class="tt-global-label">${t('timetracking.thisWeek')}</span>
-              <span class="tt-global-value">${formatDuration(globalTimes.week, true)}</span>
+              <span class="tt-global-value">${formatDuration(globalTimes.week, { showSeconds: true, alwaysShowMinutes: false })}</span>
             </div>
             <div class="tt-global-item ${currentPeriod === 'month' && currentOffset === 0 ? 'active' : ''}">
               <span class="tt-global-label">${t('timetracking.thisMonth')}</span>
-              <span class="tt-global-value">${formatDuration(globalTimes.month, true)}</span>
+              <span class="tt-global-value">${formatDuration(globalTimes.month, { showSeconds: true, alwaysShowMinutes: false })}</span>
             </div>
           </div>
         </div>
@@ -730,6 +689,16 @@ function render(container) {
  * Close the calendar popup
  */
 function closeCalendarPopup() {
+  // Remove document-level listeners
+  if (calendarOutsideClickHandler) {
+    document.removeEventListener('mousedown', calendarOutsideClickHandler);
+    calendarOutsideClickHandler = null;
+  }
+  if (calendarEscHandler) {
+    document.removeEventListener('keydown', calendarEscHandler);
+    calendarEscHandler = null;
+  }
+
   if (calendarPopup) {
     calendarPopup.classList.add('closing');
     setTimeout(() => {
@@ -952,22 +921,20 @@ function showCalendarPopup(container, anchorEl) {
   anchorEl.appendChild(popup);
 
   // Close on outside click
-  const outsideClickHandler = (e) => {
+  calendarOutsideClickHandler = (e) => {
     if (calendarPopup && !calendarPopup.contains(e.target) && e.target !== anchorEl.querySelector('.tt-period-label')) {
       closeCalendarPopup();
-      document.removeEventListener('mousedown', outsideClickHandler);
     }
   };
-  setTimeout(() => document.addEventListener('mousedown', outsideClickHandler), 0);
+  setTimeout(() => document.addEventListener('mousedown', calendarOutsideClickHandler), 0);
 
   // Close on Escape
-  const escHandler = (e) => {
+  calendarEscHandler = (e) => {
     if (e.key === 'Escape') {
       closeCalendarPopup();
-      document.removeEventListener('keydown', escHandler);
     }
   };
-  document.addEventListener('keydown', escHandler);
+  document.addEventListener('keydown', calendarEscHandler);
 }
 
 /**
@@ -1048,6 +1015,5 @@ function cleanup() {
 module.exports = {
   init,
   render,
-  cleanup,
-  formatDuration
+  cleanup
 };

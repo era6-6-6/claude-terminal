@@ -31,25 +31,9 @@ const {
   getEditorCommand
 } = require('../../state');
 const { escapeHtml } = require('../../utils');
+const { formatDuration } = require('../../utils/format');
 const { t } = require('../../i18n');
 const CustomizePicker = require('./CustomizePicker');
-
-/**
- * Format duration in milliseconds to human-readable string
- * @param {number} ms - Duration in milliseconds
- * @returns {string}
- */
-function formatDuration(ms) {
-  if (!ms || ms < 1000) return '0m';
-
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-
-  if (hours > 0) {
-    return `${hours}h${minutes > 0 ? ` ${minutes}m` : ''}`;
-  }
-  return `${minutes}m`;
-}
 
 // Local state
 let dragState = { dragging: null, dropTarget: null };

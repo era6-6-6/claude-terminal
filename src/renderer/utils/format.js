@@ -48,20 +48,55 @@ function formatFileSize(bytes) {
 /**
  * Format duration in milliseconds to readable string
  * @param {number} ms - Duration in milliseconds
- * @returns {string} - Formatted duration (e.g., "2m 30s")
+ * @param {Object} [options] - Formatting options
+ * @param {boolean} [options.showSeconds=false] - Show seconds when duration > 1 min
+ * @param {boolean} [options.compact=false] - Compact format without spaces (e.g., "2h30")
+ * @param {boolean} [options.alwaysShowMinutes=true] - Show "0m" for sub-minute durations instead of seconds
+ * @returns {string} - Formatted duration
  */
-function formatDuration(ms) {
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
+function formatDuration(ms, options = {}) {
+  const { showSeconds = false, compact = false, alwaysShowMinutes = true } = options;
+
+  if (!ms || ms < 0) ms = 0;
+
+  const hours = Math.floor(ms / 3600000);
+  const minutes = Math.floor((ms % 3600000) / 60000);
+  const seconds = Math.floor((ms % 60000) / 1000);
+
+  const sep = compact ? '' : ' ';
 
   if (hours > 0) {
-    return `${hours}h ${minutes % 60}m`;
+    if (minutes > 0) {
+      return compact ? `${hours}h${minutes.toString().padStart(2, '0')}` : `${hours}h${sep}${minutes}m`;
+    }
+    return `${hours}h`;
   }
+
   if (minutes > 0) {
-    return `${minutes}m ${seconds % 60}s`;
+    if (showSeconds && seconds > 0) {
+      return `${minutes}m${sep}${seconds}s`;
+    }
+    return `${minutes}m`;
   }
-  return `${seconds}s`;
+
+  // Sub-minute
+  if (alwaysShowMinutes) {
+    return '0m';
+  }
+  return seconds > 0 ? `${seconds}s` : '0s';
+}
+
+/**
+ * Format duration for large hero displays
+ * @param {number} ms - Duration in milliseconds
+ * @returns {{ hours: number, minutes: number }}
+ */
+function formatDurationLarge(ms) {
+  if (!ms || ms < 0) ms = 0;
+  return {
+    hours: Math.floor(ms / 3600000),
+    minutes: Math.floor((ms % 3600000) / 60000)
+  };
 }
 
 /**
@@ -133,6 +168,7 @@ module.exports = {
   formatRelativeTime,
   formatFileSize,
   formatDuration,
+  formatDurationLarge,
   truncate,
   truncatePath,
   capitalize,
