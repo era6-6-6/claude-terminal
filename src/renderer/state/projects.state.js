@@ -835,6 +835,30 @@ function reorderQuickActions(projectId, fromIndex, toIndex) {
   setQuickActions(projectId, actions);
 }
 
+/**
+ * Set preferred editor for a project
+ * @param {string} projectId
+ * @param {string|null} editor - 'code' | 'cursor' | 'webstorm' | 'idea' | null (global default)
+ */
+function setProjectEditor(projectId, editor) {
+  const state = projectsState.get();
+  const projects = state.projects.map(p =>
+    p.id === projectId ? { ...p, preferredEditor: editor || undefined } : p
+  );
+  projectsState.set({ projects });
+  saveProjects();
+}
+
+/**
+ * Get preferred editor for a project
+ * @param {string} projectId
+ * @returns {string|null} - Editor key or null if using global default
+ */
+function getProjectEditor(projectId) {
+  const project = getProject(projectId);
+  return project?.preferredEditor || null;
+}
+
 module.exports = {
   projectsState,
   generateFolderId,
@@ -871,5 +895,8 @@ module.exports = {
   addQuickAction,
   updateQuickAction,
   deleteQuickAction,
-  reorderQuickActions
+  reorderQuickActions,
+  // Editor per project
+  setProjectEditor,
+  getProjectEditor
 };

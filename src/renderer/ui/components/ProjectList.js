@@ -23,7 +23,12 @@ const {
   setProjectColor,
   setProjectIcon,
   setFolderIcon,
-  getProjectTimes
+  getProjectTimes,
+  getProjectEditor,
+  setProjectEditor,
+  getSetting,
+  EDITOR_OPTIONS,
+  getEditorCommand
 } = require('../../state');
 const { escapeHtml } = require('../../utils');
 const { t } = require('../../i18n');
@@ -227,6 +232,10 @@ function renderProjectHtml(project, depth) {
     <button class="more-actions-item btn-open-folder" data-project-id="${project.id}">
       <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 19H5V5h7l2 2h5v12zm0-12h-5l-2-2H5c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2z"/></svg>
       ${t('projects.openFolder')}
+    </button>
+    <button class="more-actions-item btn-open-editor" data-project-id="${project.id}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
+      ${t('projects.openInEditor', { editor: (EDITOR_OPTIONS.find(e => e.value === (getProjectEditor(project.id) || getSetting('editor'))) || EDITOR_OPTIONS[0]).label })}
     </button>
     <div class="more-actions-divider"></div>
     <button class="more-actions-item btn-customize-project" data-project-id="${project.id}">
@@ -570,6 +579,80 @@ function attachListeners(list) {
       e.stopPropagation();
       const project = getProject(btn.dataset.projectId);
       if (project) api.dialog.openInExplorer(project.path);
+    };
+  });
+
+  // Open in editor (left click) + change editor (right click)
+  list.querySelectorAll('.btn-open-editor').forEach(btn => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const projectId = btn.dataset.projectId;
+      const project = getProject(projectId);
+      if (!project) return;
+      const editor = getProjectEditor(projectId) || getSetting('editor') || 'code';
+      closeAllMoreActionsMenus();
+      api.dialog.openInEditor({ editor: getEditorCommand(editor), path: project.path });
+    };
+
+    btn.oncontextmenu = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const projectId = btn.dataset.projectId;
+      const currentEditor = getProjectEditor(projectId);
+      closeAllMoreActionsMenus();
+
+      // Remove any existing editor context menu
+      document.querySelectorAll('.editor-context-menu').forEach(m => m.remove());
+
+      const menu = document.createElement('div');
+      menu.className = 'editor-context-menu';
+      menu.style.cssText = `position:fixed;top:${e.clientY}px;left:${e.clientX}px;z-index:10000;background:var(--bg-tertiary);border:1px solid var(--border-color);border-radius:8px;padding:4px 0;min-width:180px;box-shadow:0 8px 24px rgba(0,0,0,0.4);`;
+
+      // "Default (global)" option
+      const globalEditor = getSetting('editor') || 'code';
+      const globalLabel = (EDITOR_OPTIONS.find(e => e.value === globalEditor) || EDITOR_OPTIONS[0]).label;
+      let itemsHtml = `<button class="editor-ctx-item" data-editor="" style="display:flex;align-items:center;gap:8px;width:100%;padding:6px 12px;background:none;border:none;color:var(--text-primary);cursor:pointer;font-size:13px;text-align:left;">
+        <span style="width:16px;text-align:center;">${!currentEditor ? '✓' : ''}</span>
+        ${t('projects.globalDefault')} (${globalLabel})
+      </button>`;
+      itemsHtml += '<div style="height:1px;background:var(--border-color);margin:4px 0;"></div>';
+
+      EDITOR_OPTIONS.forEach(opt => {
+        const isSelected = currentEditor === opt.value;
+        itemsHtml += `<button class="editor-ctx-item" data-editor="${opt.value}" style="display:flex;align-items:center;gap:8px;width:100%;padding:6px 12px;background:none;border:none;color:var(--text-primary);cursor:pointer;font-size:13px;text-align:left;">
+          <span style="width:16px;text-align:center;">${isSelected ? '✓' : ''}</span>
+          ${opt.label}
+        </button>`;
+      });
+
+      menu.innerHTML = itemsHtml;
+      document.body.appendChild(menu);
+
+      // Adjust position if overflowing
+      const menuRect = menu.getBoundingClientRect();
+      if (menuRect.right > window.innerWidth) menu.style.left = `${window.innerWidth - menuRect.width - 8}px`;
+      if (menuRect.bottom > window.innerHeight) menu.style.top = `${window.innerHeight - menuRect.height - 8}px`;
+
+      // Hover effect
+      menu.querySelectorAll('.editor-ctx-item').forEach(item => {
+        item.onmouseenter = () => item.style.background = 'var(--bg-hover)';
+        item.onmouseleave = () => item.style.background = 'none';
+        item.onclick = () => {
+          const editorValue = item.dataset.editor || null;
+          setProjectEditor(projectId, editorValue);
+          menu.remove();
+          if (callbacks.onRenderProjects) callbacks.onRenderProjects();
+        };
+      });
+
+      // Close on outside click
+      const closeMenu = (ev) => {
+        if (!menu.contains(ev.target)) {
+          menu.remove();
+          document.removeEventListener('click', closeMenu, true);
+        }
+      };
+      setTimeout(() => document.addEventListener('click', closeMenu, true), 0);
     };
   });
 
