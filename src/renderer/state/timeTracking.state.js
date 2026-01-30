@@ -8,6 +8,9 @@ const { State } = require('./State');
 
 // Constants
 const IDLE_TIMEOUT = 15 * 60 * 1000; // 15 minutes
+const SLEEP_GAP_THRESHOLD = 2 * 60 * 1000; // 2 minutes - gap indicating system sleep/wake
+let lastHeartbeat = Date.now();
+let heartbeatTimer = null;
 
 // Runtime state (not persisted)
 // activeSessions: Map<projectId, { sessionStartTime, lastActivityTime, isIdle }>
@@ -27,6 +30,129 @@ let lastKnownDate = null;
 let projectsStateRef = null;
 let saveProjectsRef = null;
 let saveProjectsImmediateRef = null;
+let globalTimesCache = null; // { sessionsToday, sessionsWeek, sessionsMonth, computedAt }
+
+/**
+ * Sanitize and validate all time tracking data on load
+ * Fixes: negative times, NaN durations, future dates, malformed sessions
+ */
+function sanitizeTimeTrackingData() {
+  if (!projectsStateRef) return;
+
+  const currentState = projectsStateRef.get();
+  let needsSave = false;
+  const now = Date.now();
+  const maxReasonableDuration = 24 * 60 * 60 * 1000; // 24h max per session
+
+  // Sanitize per-project time tracking
+  const projects = currentState.projects.map(p => {
+    if (!p.timeTracking) return p;
+    const tracking = { ...p.timeTracking };
+    let changed = false;
+
+    // Fix negative or NaN totalTime
+    if (!Number.isFinite(tracking.totalTime) || tracking.totalTime < 0) {
+      console.warn(`[TimeTracking] Sanitize: project ${p.id} totalTime was ${tracking.totalTime}, reset to 0`);
+      tracking.totalTime = 0;
+      changed = true;
+    }
+
+    // Fix negative or NaN todayTime
+    if (!Number.isFinite(tracking.todayTime) || tracking.todayTime < 0) {
+      tracking.todayTime = 0;
+      changed = true;
+    }
+
+    // Fix future lastActiveDate
+    if (tracking.lastActiveDate) {
+      const lastDate = new Date(tracking.lastActiveDate + 'T00:00:00');
+      if (lastDate.getTime() > now + 86400000) { // more than 1 day in the future
+        tracking.lastActiveDate = null;
+        tracking.todayTime = 0;
+        changed = true;
+      }
+    }
+
+    // Sanitize sessions
+    if (Array.isArray(tracking.sessions)) {
+      const validSessions = tracking.sessions.filter(s => {
+        if (!s || !s.startTime || !s.endTime) return false;
+        if (!Number.isFinite(s.duration) || s.duration <= 0) return false;
+        if (s.duration > maxReasonableDuration) return false;
+        const start = new Date(s.startTime).getTime();
+        const end = new Date(s.endTime).getTime();
+        if (isNaN(start) || isNaN(end)) return false;
+        if (end < start) return false;
+        return true;
+      });
+
+      if (validSessions.length !== tracking.sessions.length) {
+        console.warn(`[TimeTracking] Sanitize: project ${p.id} removed ${tracking.sessions.length - validSessions.length} invalid sessions`);
+        tracking.sessions = validSessions;
+        changed = true;
+      }
+    } else {
+      tracking.sessions = [];
+      changed = true;
+    }
+
+    if (changed) {
+      needsSave = true;
+      return { ...p, timeTracking: tracking };
+    }
+    return p;
+  });
+
+  // Sanitize global time tracking
+  let globalTracking = currentState.globalTimeTracking;
+  if (globalTracking) {
+    globalTracking = { ...globalTracking };
+    let gChanged = false;
+
+    for (const key of ['totalTime', 'todayTime', 'weekTime', 'monthTime']) {
+      if (!Number.isFinite(globalTracking[key]) || globalTracking[key] < 0) {
+        globalTracking[key] = 0;
+        gChanged = true;
+      }
+    }
+
+    if (Array.isArray(globalTracking.sessions)) {
+      const validSessions = globalTracking.sessions.filter(s => {
+        if (!s || !s.startTime || !s.endTime) return false;
+        if (!Number.isFinite(s.duration) || s.duration <= 0) return false;
+        if (s.duration > maxReasonableDuration) return false;
+        const start = new Date(s.startTime).getTime();
+        const end = new Date(s.endTime).getTime();
+        if (isNaN(start) || isNaN(end)) return false;
+        if (end < start) return false;
+        return true;
+      });
+
+      if (validSessions.length !== globalTracking.sessions.length) {
+        console.warn(`[TimeTracking] Sanitize: global removed ${globalTracking.sessions.length - validSessions.length} invalid sessions`);
+        globalTracking.sessions = validSessions;
+        gChanged = true;
+      }
+    } else {
+      globalTracking.sessions = [];
+      gChanged = true;
+    }
+
+    if (gChanged) {
+      needsSave = true;
+    }
+  }
+
+  if (needsSave) {
+    const newState = { ...currentState, projects };
+    if (globalTracking) {
+      newState.globalTimeTracking = globalTracking;
+    }
+    projectsStateRef.set(newState);
+    saveProjectsRef();
+    console.log('[TimeTracking] Data sanitized and saved');
+  }
+}
 
 /**
  * Initialize with references to projects state functions
@@ -40,12 +166,18 @@ function initTimeTracking(projectsState, saveProjects, saveProjectsImmediate) {
   saveProjectsImmediateRef = saveProjectsImmediate;
   console.log('[TimeTracking] Initialized with projectsState:', !!projectsState, 'saveProjects:', !!saveProjects, 'saveProjectsImmediate:', !!saveProjectsImmediate);
 
+  // Sanitize data on load
+  sanitizeTimeTrackingData();
+
   // Migrate existing data to new counter format
   migrateGlobalTimeTracking();
 
   // Start midnight check interval
   lastKnownDate = getTodayString();
   startMidnightCheck();
+
+  // Start sleep/wake detection heartbeat
+  startHeartbeat();
 }
 
 /**
@@ -126,6 +258,72 @@ function startMidnightCheck() {
 }
 
 /**
+ * Start heartbeat timer to detect system sleep/wake
+ * Runs every 30 seconds; if gap between ticks > SLEEP_GAP_THRESHOLD, system was asleep
+ */
+function startHeartbeat() {
+  clearInterval(heartbeatTimer);
+  lastHeartbeat = Date.now();
+  heartbeatTimer = setInterval(checkSleepWake, 30 * 1000);
+}
+
+/**
+ * Check if system was asleep and handle session splitting
+ */
+function checkSleepWake() {
+  const now = Date.now();
+  const elapsed = now - lastHeartbeat;
+  lastHeartbeat = now;
+
+  if (elapsed > SLEEP_GAP_THRESHOLD) {
+    console.log(`[TimeTracking] Sleep/wake detected: gap of ${Math.round(elapsed / 1000)}s`);
+    handleSleepWake(now - elapsed, now);
+  }
+}
+
+/**
+ * Handle system sleep/wake: cut active sessions at the last known awake time
+ * @param {number} sleepStart - Approximate time system went to sleep (last heartbeat)
+ * @param {number} wakeTime - Time system woke up (now)
+ */
+function handleSleepWake(sleepStart, wakeTime) {
+  const state = trackingState.get();
+
+  // Cut global session at sleep time, restart from wake time
+  if (state.globalSessionStartTime && !state.globalIsIdle) {
+    const duration = sleepStart - state.globalSessionStartTime;
+    if (duration > 1000) {
+      saveGlobalSession(state.globalSessionStartTime, sleepStart, duration);
+    }
+    trackingState.set({
+      ...trackingState.get(),
+      globalSessionStartTime: wakeTime,
+      globalLastActivityTime: wakeTime
+    });
+    console.log('[TimeTracking] Global session cut at sleep boundary');
+  }
+
+  // Cut project sessions
+  const activeSessions = new Map(trackingState.get().activeSessions);
+  for (const [projectId, session] of activeSessions) {
+    if (session.sessionStartTime && !session.isIdle) {
+      const duration = sleepStart - session.sessionStartTime;
+      if (duration > 1000) {
+        saveSession(projectId, session.sessionStartTime, sleepStart, duration);
+      }
+      activeSessions.set(projectId, {
+        ...session,
+        sessionStartTime: wakeTime,
+        lastActivityTime: wakeTime
+      });
+      console.log('[TimeTracking] Project session cut at sleep boundary:', projectId);
+    }
+  }
+
+  trackingState.set({ ...trackingState.get(), activeSessions });
+}
+
+/**
  * Check if the date has changed (midnight crossed) and split active sessions
  */
 function checkMidnightReset() {
@@ -134,6 +332,7 @@ function checkMidnightReset() {
   if (lastKnownDate && lastKnownDate !== today) {
     console.log('[TimeTracking] Midnight detected! Date changed from', lastKnownDate, 'to', today);
     lastKnownDate = today;
+    globalTimesCache = null; // Invalidate cache on date change
     splitSessionsAtMidnight();
   }
 }
@@ -423,61 +622,48 @@ function saveGlobalSession(startTime, endTime, duration) {
     return;
   }
 
-  // Get or create global tracking data in settings
-  const currentState = projectsStateRef.get();
-  const globalTracking = currentState.globalTimeTracking || {
-    totalTime: 0,
-    todayTime: 0,
-    weekTime: 0,
-    monthTime: 0,
-    lastActiveDate: null,
-    weekStart: null,
-    monthStart: null,
-    sessions: []
-  };
-
   const today = getTodayString();
   const weekStart = getWeekStartString();
   const monthStart = getMonthString();
 
-  // Reset today if date changed
-  if (globalTracking.lastActiveDate !== today) {
-    globalTracking.todayTime = 0;
-    globalTracking.lastActiveDate = today;
-  }
+  // Immutable update: read fresh state, produce new object without mutation
+  const currentState = projectsStateRef.get();
+  const prev = currentState.globalTimeTracking || {
+    totalTime: 0, todayTime: 0, weekTime: 0, monthTime: 0,
+    lastActiveDate: null, weekStart: null, monthStart: null, sessions: []
+  };
 
-  // Reset week if week changed
-  if (globalTracking.weekStart !== weekStart) {
-    globalTracking.weekTime = 0;
-    globalTracking.weekStart = weekStart;
-  }
+  const todayTime = (prev.lastActiveDate !== today ? 0 : (prev.todayTime || 0)) + duration;
+  const weekTime = (prev.weekStart !== weekStart ? 0 : (prev.weekTime || 0)) + duration;
+  const monthTime = (prev.monthStart !== monthStart ? 0 : (prev.monthTime || 0)) + duration;
 
-  // Reset month if month changed
-  if (globalTracking.monthStart !== monthStart) {
-    globalTracking.monthTime = 0;
-    globalTracking.monthStart = monthStart;
-  }
-
-  // Update all time counters
-  globalTracking.totalTime += duration;
-  globalTracking.todayTime += duration;
-  globalTracking.weekTime += duration;
-  globalTracking.monthTime += duration;
-
-  // Add session (keep last 100)
-  globalTracking.sessions.push({
+  const newSession = {
     id: generateSessionId(),
     startTime: new Date(startTime).toISOString(),
     endTime: new Date(endTime).toISOString(),
     duration
-  });
+  };
 
-  // Keep more global sessions for streak calculation (365 days coverage)
-  if (globalTracking.sessions.length > 500) {
-    globalTracking.sessions = globalTracking.sessions.slice(-500);
+  let sessions = [...(prev.sessions || []), newSession];
+  if (sessions.length > 500) {
+    sessions = sessions.slice(-500);
   }
 
-  // Save
+  const globalTracking = {
+    ...prev,
+    totalTime: (prev.totalTime || 0) + duration,
+    todayTime,
+    weekTime,
+    monthTime,
+    lastActiveDate: today,
+    weekStart,
+    monthStart,
+    sessions
+  };
+
+  // Invalidate global times cache
+  globalTimesCache = null;
+
   projectsStateRef.set({ ...currentState, globalTimeTracking: globalTracking });
   saveProjectsRef();
 }
@@ -591,35 +777,42 @@ function saveSession(projectId, startTime, endTime, duration) {
     return;
   }
 
-  const project = getProjectById(projectId);
-  if (!project) return;
-
-  resetTodayIfNeeded(project);
-  const tracking = ensureTimeTracking(project);
-
-  // Update times
-  tracking.totalTime += duration;
-  tracking.todayTime += duration;
-  tracking.lastActiveDate = getTodayString();
-
-  // Add session (keep last 100 sessions)
-  tracking.sessions.push({
+  const today = getTodayString();
+  const newSession = {
     id: generateSessionId(),
     startTime: new Date(startTime).toISOString(),
     endTime: new Date(endTime).toISOString(),
     duration
+  };
+
+  // Immutable update: read fresh state, produce new state without mutation
+  const currentState = projectsStateRef.get();
+  const projects = currentState.projects.map(p => {
+    if (p.id !== projectId) return p;
+
+    const tracking = p.timeTracking ? { ...p.timeTracking } : {
+      totalTime: 0, todayTime: 0, lastActiveDate: null, sessions: []
+    };
+
+    // Reset today if date changed
+    if (tracking.lastActiveDate !== today) {
+      tracking.todayTime = 0;
+    }
+
+    tracking.totalTime = (tracking.totalTime || 0) + duration;
+    tracking.todayTime = (tracking.todayTime || 0) + duration;
+    tracking.lastActiveDate = today;
+    tracking.sessions = [...(tracking.sessions || []), newSession];
+
+    // Limit sessions
+    if (tracking.sessions.length > 100) {
+      tracking.sessions = tracking.sessions.slice(-100);
+    }
+
+    return { ...p, timeTracking: tracking };
   });
 
-  // Limit sessions to prevent excessive storage
-  if (tracking.sessions.length > 100) {
-    tracking.sessions = tracking.sessions.slice(-100);
-  }
-
-  // Update state and save
-  const projects = projectsStateRef.get().projects.map(p =>
-    p.id === projectId ? { ...p, timeTracking: tracking } : p
-  );
-  projectsStateRef.set({ projects });
+  projectsStateRef.set({ ...currentState, projects });
   saveProjectsRef();
 }
 
@@ -828,6 +1021,7 @@ function saveAllActiveSessions() {
   idleTimers.clear();
   clearTimeout(globalIdleTimer);
   clearInterval(midnightCheckTimer);
+  clearInterval(heartbeatTimer);
 
   trackingState.set({
     activeSessions: new Map(),
@@ -877,24 +1071,15 @@ function getGlobalTimes() {
     return { today: 0, week: 0, month: 0 };
   }
 
-  const currentState = projectsStateRef.get();
-  const globalTracking = currentState.globalTimeTracking;
-  const state = trackingState.get();
-
-  let todayTotal = 0;
-  let weekTotal = 0;
-  let monthTotal = 0;
-
-  // Calculate date boundaries (always needed for active session clipping)
   const now = new Date();
+  const nowMs = now.getTime();
 
-  // Today boundaries
+  // Calculate date boundaries
   const todayStart = new Date(now);
   todayStart.setHours(0, 0, 0, 0);
   const todayEnd = new Date(todayStart);
   todayEnd.setDate(todayEnd.getDate() + 1);
 
-  // Week boundaries (Monday to Sunday)
   const day = now.getDay();
   const diffToMonday = day === 0 ? 6 : day - 1;
   const weekStartDate = new Date(now);
@@ -903,53 +1088,64 @@ function getGlobalTimes() {
   const weekEndDate = new Date(weekStartDate);
   weekEndDate.setDate(weekEndDate.getDate() + 7);
 
-  // Month boundaries
   const monthStartDate = new Date(now.getFullYear(), now.getMonth(), 1);
   const monthEndDate = new Date(now.getFullYear(), now.getMonth() + 1, 1);
 
-  if (globalTracking) {
-    const sessions = globalTracking.sessions || [];
+  // Use cached session totals if available (invalidated on save)
+  let todayTotal, weekTotal, monthTotal;
 
-    // Calculate totals from sessions
-    for (const session of sessions) {
-      const sessionDate = new Date(session.startTime);
-      const duration = session.duration || 0;
+  if (globalTimesCache) {
+    todayTotal = globalTimesCache.sessionsToday;
+    weekTotal = globalTimesCache.sessionsWeek;
+    monthTotal = globalTimesCache.sessionsMonth;
+  } else {
+    todayTotal = 0;
+    weekTotal = 0;
+    monthTotal = 0;
 
-      // Today
-      if (sessionDate >= todayStart && sessionDate < todayEnd) {
-        todayTotal += duration;
-      }
+    const currentState = projectsStateRef.get();
+    const globalTracking = currentState.globalTimeTracking;
 
-      // This week
-      if (sessionDate >= weekStartDate && sessionDate < weekEndDate) {
-        weekTotal += duration;
-      }
+    if (globalTracking) {
+      const sessions = globalTracking.sessions || [];
+      for (const session of sessions) {
+        const sessionDate = new Date(session.startTime);
+        const duration = session.duration || 0;
 
-      // This month
-      if (sessionDate >= monthStartDate && sessionDate < monthEndDate) {
-        monthTotal += duration;
+        if (sessionDate >= todayStart && sessionDate < todayEnd) {
+          todayTotal += duration;
+        }
+        if (sessionDate >= weekStartDate && sessionDate < weekEndDate) {
+          weekTotal += duration;
+        }
+        if (sessionDate >= monthStartDate && sessionDate < monthEndDate) {
+          monthTotal += duration;
+        }
       }
     }
+
+    globalTimesCache = {
+      sessionsToday: todayTotal,
+      sessionsWeek: weekTotal,
+      sessionsMonth: monthTotal
+    };
   }
 
   // Add current global session time if active, clipped to period boundaries
+  const state = trackingState.get();
   if (state.globalSessionStartTime && !state.globalIsIdle) {
-    const nowMs = Date.now();
     const sessionStart = state.globalSessionStartTime;
 
-    // Clip to today boundary
     const todayEffectiveStart = Math.max(sessionStart, todayStart.getTime());
     if (nowMs > todayEffectiveStart) {
       todayTotal += nowMs - todayEffectiveStart;
     }
 
-    // Clip to week boundary
     const weekEffectiveStart = Math.max(sessionStart, weekStartDate.getTime());
     if (nowMs > weekEffectiveStart) {
       weekTotal += nowMs - weekEffectiveStart;
     }
 
-    // Clip to month boundary
     const monthEffectiveStart = Math.max(sessionStart, monthStartDate.getTime());
     if (nowMs > monthEffectiveStart) {
       monthTotal += nowMs - monthEffectiveStart;
