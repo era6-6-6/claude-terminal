@@ -1168,13 +1168,24 @@ FileExplorer.setCallbacks({
     const selectedFilter = projectsState.get().selectedProjectFilter;
     const projects = projectsState.get().projects;
     if (selectedFilter !== null && projects[selectedFilter]) {
-      // Create a project-like object with the folder path as cwd
       const project = { ...projects[selectedFilter], path: folderPath };
       TerminalManager.createTerminal(project, { runClaude: false });
     }
+  },
+  onOpenFile: (filePath) => {
+    const selectedFilter = projectsState.get().selectedProjectFilter;
+    const projects = projectsState.get().projects;
+    const project = selectedFilter !== null ? projects[selectedFilter] : null;
+    TerminalManager.openFileTab(filePath, project);
   }
 });
 FileExplorer.init();
+
+// Toggle explorer button
+const btnToggleExplorer = document.getElementById('btn-toggle-explorer');
+if (btnToggleExplorer) {
+  btnToggleExplorer.onclick = () => FileExplorer.toggle();
+}
 
 // Subscribe to project selection changes for FileExplorer
 projectsState.subscribe(() => {

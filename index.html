@@ -194,16 +194,15 @@
               </div>
             </div>
             <div class="file-explorer-tree" id="file-explorer-tree"></div>
-            <div class="file-explorer-preview" id="file-explorer-preview" style="display: none;">
-              <div class="preview-header" id="preview-header"></div>
-              <pre class="preview-content" id="preview-content"></pre>
-            </div>
             <div class="panel-resizer" id="file-explorer-resizer"></div>
           </div>
 
           <!-- Terminals Panel -->
           <div class="terminals-panel">
             <div class="terminals-header">
+              <button class="btn-icon btn-toggle-explorer" id="btn-toggle-explorer" title="Toggle Explorer">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>
+              </button>
               <div class="terminals-filter" id="terminals-filter" style="display: none;">
                 <span class="filter-label" data-i18n="ui.terminalsOf">Terminaux de</span>
                 <span class="filter-project" id="filter-project-name"></span>

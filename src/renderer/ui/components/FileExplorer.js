@@ -6,9 +6,7 @@
 const api = window.electron_api;
 const { path, fs } = window.electron_nodeModules;
 const { escapeHtml } = require('../../utils/dom');
-const { formatFileSize } = require('../../utils/format');
 const { getFileIcon, CHEVRON_ICON } = require('../../utils/fileIcons');
-const { highlight } = require('../../utils/syntaxHighlight');
 const { showContextMenu } = require('./ContextMenu');
 const { t } = require('../../i18n');
 
@@ -17,11 +15,11 @@ let rootPath = null;
 let selectedFile = null;
 let expandedFolders = new Map(); // path -> { children: [...], loaded: bool }
 let callbacks = {
-  onOpenInTerminal: null
+  onOpenInTerminal: null,
+  onOpenFile: null
 };
 let isVisible = false;
 let manuallyHidden = false;
-let previewTimeout = null;
 
 // Patterns to ignore
 const IGNORE_PATTERNS = new Set([
@@ -30,24 +28,6 @@ const IGNORE_PATTERNS = new Set([
   '.DS_Store', 'Thumbs.db', '.env.local', 'coverage',
   '.nuxt', '.output', '.turbo', '.parcel-cache'
 ]);
-
-// Binary file extensions
-const BINARY_EXTENSIONS = new Set([
-  'exe', 'dll', 'so', 'dylib', 'bin', 'obj', 'o', 'a', 'lib',
-  'zip', 'tar', 'gz', 'bz2', 'xz', '7z', 'rar',
-  'png', 'jpg', 'jpeg', 'gif', 'bmp', 'ico', 'webp', 'tiff', 'tif',
-  'mp3', 'wav', 'ogg', 'flac', 'aac', 'wma', 'mp4', 'avi', 'mkv', 'mov', 'wmv',
-  'pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx',
-  'ttf', 'otf', 'woff', 'woff2', 'eot',
-  'sqlite', 'db', 'mdb',
-  'class', 'pyc', 'pyo', 'wasm', 'pak', 'dat'
-]);
-
-// Image extensions (for inline preview)
-const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp', 'ico', 'bmp']);
-
-// Max file size for preview (500KB)
-const MAX_PREVIEW_SIZE = 500 * 1024;
 
 // Max entries displayed per folder
 const MAX_DISPLAY_ENTRIES = 500;
@@ -66,15 +46,6 @@ function isPathSafe(targetPath) {
 
 function sanitizeFileName(name) {
   return name.replace(/[<>:"/\\|?*\x00-\x1f]/g, '_');
-}
-
-// ========== BINARY DETECTION BY CONTENT ==========
-function isBinaryBuffer(buffer) {
-  const checkLength = Math.min(buffer.length, 8192);
-  for (let i = 0; i < checkLength; i++) {
-    if (buffer[i] === 0) return true;
-  }
-  return false;
 }
 
 // ========== ROOT PATH ==========
@@ -103,6 +74,17 @@ function hide() {
   if (panel) {
     panel.style.display = 'none';
     isVisible = false;
+  }
+}
+
+function toggle() {
+  if (isVisible) {
+    hide();
+    manuallyHidden = true;
+  } else if (rootPath) {
+    manuallyHidden = false;
+    show();
+    render();
   }
 }
 
@@ -236,66 +218,14 @@ function renderTreeNodes(dirPath, depth) {
   return parts.join('');
 }
 
-// ========== PREVIEW ==========
-function showPreview(filePath) {
-  const previewPanel = document.getElementById('file-explorer-preview');
-  const previewHeader = document.getElementById('preview-header');
-  const previewContent = document.getElementById('preview-content');
-  if (!previewPanel || !previewHeader || !previewContent) return;
-
-  const fileName = path.basename(filePath);
-  const dotIdx = fileName.lastIndexOf('.');
-  const ext = dotIdx !== -1 ? fileName.substring(dotIdx + 1).toLowerCase() : '';
-
-  // Extension-based binary check (fast path for known binary types)
-  if (BINARY_EXTENSIONS.has(ext)) {
-    if (IMAGE_EXTENSIONS.has(ext)) {
-      const fileUrl = 'file:///' + filePath.replace(/\\/g, '/').split('/').map(encodeURIComponent).join('/');
-      previewPanel.style.display = 'flex';
-      previewHeader.textContent = fileName;
-      previewContent.innerHTML = `<img src="${fileUrl}" class="fe-preview-image" alt="${escapeHtml(fileName)}">`;
-      return;
-    }
-    previewPanel.style.display = 'flex';
-    previewHeader.textContent = fileName;
-    previewContent.innerHTML = `<div class="fe-preview-message">${t('fileExplorer.binaryFile') || 'Binary file - cannot preview'}</div>`;
-    return;
+// ========== OPEN FILE ==========
+function openFile(filePath) {
+  if (callbacks.onOpenFile) {
+    callbacks.onOpenFile(filePath);
+  } else {
+    // Fallback: open in default editor
+    api.dialog.openInEditor({ editor: 'code', path: filePath });
   }
-
-  try {
-    const stats = fs.statSync(filePath);
-    if (stats.size > MAX_PREVIEW_SIZE) {
-      previewPanel.style.display = 'flex';
-      previewHeader.textContent = `${fileName} (${formatFileSize(stats.size)})`;
-      previewContent.innerHTML = `<div class="fe-preview-message">${t('fileExplorer.fileTooLarge') || 'File too large to preview'}</div>`;
-      return;
-    }
-
-    // Read as buffer first to detect binary content
-    const buffer = fs.readFileSync(filePath);
-    if (isBinaryBuffer(buffer)) {
-      previewPanel.style.display = 'flex';
-      previewHeader.textContent = fileName;
-      previewContent.innerHTML = `<div class="fe-preview-message">${t('fileExplorer.binaryFile') || 'Binary file - cannot preview'}</div>`;
-      return;
-    }
-
-    const content = buffer.toString('utf-8');
-    const highlighted = highlight(content, ext);
-
-    previewPanel.style.display = 'flex';
-    previewHeader.textContent = `${fileName} (${formatFileSize(stats.size)})`;
-    previewContent.innerHTML = `<code>${highlighted}</code>`;
-  } catch (e) {
-    previewPanel.style.display = 'flex';
-    previewHeader.textContent = fileName;
-    previewContent.innerHTML = `<div class="fe-preview-message">${t('fileExplorer.cannotRead') || 'Cannot read file'}</div>`;
-  }
-}
-
-function hidePreview() {
-  const previewPanel = document.getElementById('file-explorer-preview');
-  if (previewPanel) previewPanel.style.display = 'none';
 }
 
 // ========== CONTEXT MENU ==========
@@ -509,18 +439,7 @@ function attachListeners() {
       toggleFolder(nodePath);
     } else {
       selectFile(nodePath);
-    }
-  };
-
-  treeEl.ondblclick = (e) => {
-    const node = e.target.closest('.fe-node');
-    if (!node || node.classList.contains('fe-truncated')) return;
-
-    const nodePath = node.dataset.path;
-    const isDir = node.dataset.isDir === 'true';
-
-    if (!isDir) {
-      api.dialog.openInEditor({ editor: 'code', path: nodePath });
+      openFile(nodePath);
     }
   };
 
@@ -544,7 +463,6 @@ function attachListeners() {
     btnCollapse.onclick = () => {
       expandedFolders.clear();
       selectedFile = null;
-      hidePreview();
       render();
     };
   }
@@ -584,10 +502,6 @@ function selectFile(filePath) {
   if (next) next.classList.add('selected');
 
   selectedFile = filePath;
-
-  // Debounce preview for fast navigation
-  clearTimeout(previewTimeout);
-  previewTimeout = setTimeout(() => showPreview(filePath), 150);
 }
 
 // ========== RESIZER ==========
@@ -640,5 +554,6 @@ module.exports = {
   setRootPath,
   show,
   hide,
+  toggle,
   init
 };

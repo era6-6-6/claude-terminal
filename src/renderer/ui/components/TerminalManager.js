@@ -5,6 +5,7 @@
 
 // Use preload API instead of direct ipcRenderer
 const api = window.electron_api;
+const { path, fs } = window.electron_nodeModules;
 const { Terminal } = require('@xterm/xterm');
 const { FitAddon } = require('@xterm/addon-fit');
 const {
@@ -36,7 +37,7 @@ const {
   switchProject,
   hasTerminalsForProject
 } = require('../../state');
-const { escapeHtml } = require('../../utils');
+const { escapeHtml, getFileIcon, highlight } = require('../../utils');
 const { t, getCurrentLanguage } = require('../../i18n');
 const {
   CLAUDE_TERMINAL_THEME,
@@ -446,8 +447,10 @@ function setActiveTerminal(id) {
   document.querySelectorAll('.terminal-wrapper').forEach(w => w.classList.toggle('active', w.dataset.id == id));
   const termData = getTerminal(id);
   if (termData) {
-    termData.fitAddon.fit();
-    termData.terminal.focus();
+    if (termData.type !== 'file') {
+      termData.fitAddon.fit();
+      termData.terminal.focus();
+    }
 
     // Handle project switch for time tracking
     const newProjectId = termData.project?.id;
@@ -496,9 +499,14 @@ function closeTerminal(id) {
   const closedProjectId = termData?.project?.id;
 
   // Kill and cleanup
-  api.terminal.kill({ id });
-  cleanupTerminalResources(termData);
-  removeTerminal(id);
+  if (termData && termData.type === 'file') {
+    // File tabs have no terminal process to kill
+    removeTerminal(id);
+  } else {
+    api.terminal.kill({ id });
+    cleanupTerminalResources(termData);
+    removeTerminal(id);
+  }
   document.querySelector(`.terminal-tab[data-id="${id}"]`)?.remove();
   document.querySelector(`.terminal-wrapper[data-id="${id}"]`)?.remove();
 
@@ -1511,7 +1519,7 @@ function getTerminalStatsForProject(projectIndex) {
   let working = 0;
   const terminals = terminalsState.get().terminals;
   terminals.forEach(termData => {
-    if (termData.project && termData.project.path === project.path && termData.type !== 'fivem' && !termData.isBasic) {
+    if (termData.project && termData.project.path === project.path && termData.type !== 'fivem' && termData.type !== 'file' && !termData.isBasic) {
       total++;
       if (termData.status === 'working') working++;
     }
@@ -2062,6 +2070,120 @@ async function createTerminalWithPrompt(project, prompt) {
 }
 
 /**
+ * Open a file as a tab in the terminal area
+ * @param {string} filePath - Absolute path to the file
+ * @param {Object} project - Project object
+ */
+function openFileTab(filePath, project) {
+  // Check if file is already open → switch to existing tab
+  const terminals = terminalsState.get().terminals;
+  let existingId = null;
+  terminals.forEach((td, id) => {
+    if (td.type === 'file' && td.filePath === filePath) {
+      existingId = id;
+    }
+  });
+  if (existingId) {
+    setActiveTerminal(existingId);
+    return existingId;
+  }
+
+  const id = `file-${Date.now()}`;
+  const fileName = path.basename(filePath);
+  const ext = fileName.lastIndexOf('.') !== -1 ? fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase() : '';
+  const projectIndex = project ? getProjectIndex(project.id) : null;
+
+  // Read file content
+  let content = '';
+  let fileSize = 0;
+  try {
+    const stat = fs.statSync(filePath);
+    fileSize = stat.size;
+    content = fs.readFileSync(filePath, 'utf-8');
+  } catch (e) {
+    content = `Error reading file: ${e.message}`;
+  }
+
+  // Format file size
+  let sizeStr;
+  if (fileSize < 1024) sizeStr = `${fileSize} B`;
+  else if (fileSize < 1024 * 1024) sizeStr = `${(fileSize / 1024).toFixed(1)} KB`;
+  else sizeStr = `${(fileSize / (1024 * 1024)).toFixed(1)} MB`;
+
+  // Syntax highlight
+  const highlightedContent = highlight(content, ext);
+
+  // Store in terminals Map
+  const termData = {
+    type: 'file',
+    filePath,
+    project,
+    projectIndex,
+    name: fileName,
+    status: 'ready'
+  };
+  addTerminal(id, termData);
+
+  // Create tab
+  const tabsContainer = document.getElementById('terminals-tabs');
+  const tab = document.createElement('div');
+  tab.className = 'terminal-tab file-tab status-ready';
+  tab.dataset.id = id;
+  const fileIcon = getFileIcon(fileName, false, false);
+  tab.innerHTML = `
+    <span class="file-tab-icon">${fileIcon}</span>
+    <span class="tab-name">${escapeHtml(fileName)}</span>
+    <button class="tab-close"><svg viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg></button>`;
+  tabsContainer.appendChild(tab);
+
+  // Create wrapper
+  const container = document.getElementById('terminals-container');
+  const wrapper = document.createElement('div');
+  wrapper.className = 'terminal-wrapper file-wrapper';
+  wrapper.dataset.id = id;
+
+  // Line count
+  const lineCount = content.split('\n').length;
+
+  // Build line numbers
+  const lines = content.split('\n');
+  const lineNums = lines.map((_, i) => `<span class="line-num">${i + 1}</span>`).join('\n');
+
+  wrapper.innerHTML = `
+    <div class="file-viewer-header">
+      <span class="file-viewer-icon">${fileIcon}</span>
+      <span class="file-viewer-name">${escapeHtml(fileName)}</span>
+      <span class="file-viewer-meta">${sizeStr} &middot; ${lineCount} lines</span>
+      <span class="file-viewer-path" title="${escapeHtml(filePath)}">${escapeHtml(filePath)}</span>
+    </div>
+    <div class="file-viewer-content">
+      <div class="file-viewer-lines">${lineNums}</div>
+      <pre class="file-viewer-code"><code>${highlightedContent}</code></pre>
+    </div>
+  `;
+
+  container.appendChild(wrapper);
+  document.getElementById('empty-terminals').style.display = 'none';
+
+  setActiveTerminal(id);
+
+  // Tab events
+  tab.onclick = (e) => { if (!e.target.closest('.tab-close') && !e.target.closest('.tab-name-input')) setActiveTerminal(id); };
+  tab.querySelector('.tab-name').ondblclick = (e) => { e.stopPropagation(); startRenameTab(id); };
+  tab.querySelector('.tab-close').onclick = (e) => { e.stopPropagation(); closeTerminal(id); };
+
+  // Enable drag & drop reordering
+  setupTabDragDrop(tab);
+
+  // Filter and render
+  const selectedFilter = projectsState.get().selectedProjectFilter;
+  filterByProject(selectedFilter);
+  if (callbacks.onRenderProjects) callbacks.onRenderProjects();
+
+  return id;
+}
+
+/**
  * Update theme for all existing terminals
  * @param {string} themeId - Theme identifier
  */
@@ -2153,6 +2275,8 @@ module.exports = {
   // Terminal navigation
   focusNextTerminal,
   focusPrevTerminal,
+  // File tab functions
+  openFileTab,
   // FiveM console functions
   createFivemConsole,
   closeFivemConsole,
