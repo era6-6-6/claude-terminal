@@ -84,9 +84,19 @@ class TerminalService {
 
     this.terminals.set(id, ptyProcess);
 
-    // Handle data output
+    // Handle data output - batch chunks to reduce IPC flooding (~16ms = 1 frame)
+    let buffer = '';
+    let flushScheduled = false;
     ptyProcess.onData(data => {
-      this.sendToRenderer('terminal-data', { id, data });
+      buffer += data;
+      if (!flushScheduled) {
+        flushScheduled = true;
+        setTimeout(() => {
+          this.sendToRenderer('terminal-data', { id, data: buffer });
+          buffer = '';
+          flushScheduled = false;
+        }, 16);
+      }
     });
 
     // Handle exit

@@ -73,6 +73,44 @@ const ARROW_DEBOUNCE_MS = 100;
 let draggedTab = null;
 let dragPlaceholder = null;
 
+// ── Centralized IPC dispatcher (one listener for all terminals) ──
+const terminalDataHandlers = new Map();
+const terminalExitHandlers = new Map();
+let ipcDispatcherInitialized = false;
+
+function initIpcDispatcher() {
+  if (ipcDispatcherInitialized) return;
+  ipcDispatcherInitialized = true;
+  api.terminal.onData((data) => {
+    const handler = terminalDataHandlers.get(data.id);
+    if (handler) handler(data);
+  });
+  api.terminal.onExit((data) => {
+    const handler = terminalExitHandlers.get(data.id);
+    if (handler) handler(data);
+  });
+}
+
+function registerTerminalHandler(id, onData, onExit) {
+  initIpcDispatcher();
+  terminalDataHandlers.set(id, onData);
+  terminalExitHandlers.set(id, onExit);
+}
+
+function unregisterTerminalHandler(id) {
+  terminalDataHandlers.delete(id);
+  terminalExitHandlers.delete(id);
+}
+
+// ── Throttled recordActivity (max 1 call/sec per project) ──
+const activityThrottles = new Map();
+function throttledRecordActivity(projectId) {
+  if (!projectId || activityThrottles.has(projectId)) return;
+  recordActivity(projectId);
+  activityThrottles.set(projectId, true);
+  setTimeout(() => activityThrottles.delete(projectId), 1000);
+}
+
 /**
  * Setup paste handler to prevent double-paste issue
  * xterm.js + Electron can trigger paste twice, so we handle it manually
@@ -467,8 +505,12 @@ function setActiveTerminal(id) {
 function cleanupTerminalResources(termData) {
   if (!termData) return;
 
-  // Remove IPC listeners (call unsubscribe functions)
+  // Remove IPC handlers from centralized dispatcher
   if (termData.handlers) {
+    if (termData.handlers.unregister) {
+      termData.handlers.unregister();
+    }
+    // Legacy cleanup (unsubscribe functions)
     if (termData.handlers.unsubscribeData) {
       termData.handlers.unsubscribeData();
     }
@@ -641,25 +683,20 @@ async function createTerminal(project, options = {}) {
     else if (spinnerChars.test(title)) updateTerminalStatus(id, 'working');
   });
 
-  // IPC data handling
-  const dataHandler = (data) => {
-    if (data.id === id) {
+  // IPC data handling via centralized dispatcher
+  registerTerminalHandler(id,
+    (data) => {
       terminal.write(data.data);
-      // Record activity when terminal receives output (Claude is working)
       const td = getTerminal(id);
-      if (td?.project?.id) recordActivity(td.project.id);
-    }
-  };
-  const exitHandler = (data) => {
-    if (data.id === id) closeTerminal(id);
-  };
-  const unsubscribeData = api.terminal.onData(dataHandler);
-  const unsubscribeExit = api.terminal.onExit(exitHandler);
+      if (td?.project?.id) throttledRecordActivity(td.project.id);
+    },
+    () => closeTerminal(id)
+  );
 
-  // Store unsubscribe functions for cleanup
+  // Store cleanup reference
   const storedTermData = getTerminal(id);
   if (storedTermData) {
-    storedTermData.handlers = { unsubscribeData, unsubscribeExit };
+    storedTermData.handlers = { unregister: () => unregisterTerminalHandler(id) };
   }
 
   // Input handling
@@ -667,7 +704,7 @@ async function createTerminal(project, options = {}) {
     api.terminal.input({ id, data });
     // Record activity for time tracking (resets idle timer)
     const td = getTerminal(id);
-    if (td?.project?.id) recordActivity(td.project.id);
+    if (td?.project?.id) throttledRecordActivity(td.project.id);
     if (data === '\r' || data === '\n') {
       updateTerminalStatus(id, 'working');
       if (td && td.inputBuffer.trim().length > 0) {
@@ -1741,25 +1778,20 @@ async function resumeSession(project, sessionId, options = {}) {
     else if (spinnerChars.test(title)) updateTerminalStatus(id, 'working');
   });
 
-  // IPC handlers
-  const dataHandler = (data) => {
-    if (data.id === id) {
+  // IPC handlers via centralized dispatcher
+  registerTerminalHandler(id,
+    (data) => {
       terminal.write(data.data);
-      // Record activity when terminal receives output (Claude is working)
       const td = getTerminal(id);
-      if (td?.project?.id) recordActivity(td.project.id);
-    }
-  };
-  const exitHandler = (data) => {
-    if (data.id === id) closeTerminal(id);
-  };
-  const unsubscribeData = api.terminal.onData(dataHandler);
-  const unsubscribeExit = api.terminal.onExit(exitHandler);
+      if (td?.project?.id) throttledRecordActivity(td.project.id);
+    },
+    () => closeTerminal(id)
+  );
 
   // Store handlers for cleanup
   const storedResumeTermData = getTerminal(id);
   if (storedResumeTermData) {
-    storedResumeTermData.handlers = { unsubscribeData, unsubscribeExit };
+    storedResumeTermData.handlers = { unregister: () => unregisterTerminalHandler(id) };
   }
 
   // Input handling
@@ -1767,7 +1799,7 @@ async function resumeSession(project, sessionId, options = {}) {
     api.terminal.input({ id, data });
     // Record activity for time tracking (resets idle timer)
     const td = getTerminal(id);
-    if (td?.project?.id) recordActivity(td.project.id);
+    if (td?.project?.id) throttledRecordActivity(td.project.id);
     if (data === '\r' || data === '\n') {
       updateTerminalStatus(id, 'working');
       if (td && td.inputBuffer.trim().length > 0) {
@@ -2017,20 +2049,16 @@ async function createTerminalWithPrompt(project, prompt) {
     }
   });
 
-  // IPC handlers
-  const dataHandler = (data) => {
-    if (data.id === id) terminal.write(data.data);
-  };
-  const exitHandler = (data) => {
-    if (data.id === id) closeTerminal(id);
-  };
-  const unsubscribeData = api.terminal.onData(dataHandler);
-  const unsubscribeExit = api.terminal.onExit(exitHandler);
+  // IPC handlers via centralized dispatcher
+  registerTerminalHandler(id,
+    (data) => terminal.write(data.data),
+    () => closeTerminal(id)
+  );
 
   // Store handlers for cleanup
   const storedTermData = getTerminal(id);
   if (storedTermData) {
-    storedTermData.handlers = { unsubscribeData, unsubscribeExit };
+    storedTermData.handlers = { unregister: () => unregisterTerminalHandler(id) };
   }
 
   // Input handling
