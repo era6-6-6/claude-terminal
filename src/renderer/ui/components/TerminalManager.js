@@ -8,6 +8,7 @@ const api = window.electron_api;
 const { path, fs } = window.electron_nodeModules;
 const { Terminal } = require('@xterm/xterm');
 const { FitAddon } = require('@xterm/addon-fit');
+const { WebglAddon } = require('@xterm/addon-webgl');
 const {
   terminalsState,
   addTerminal,
@@ -100,6 +101,19 @@ function registerTerminalHandler(id, onData, onExit) {
 function unregisterTerminalHandler(id) {
   terminalDataHandlers.delete(id);
   terminalExitHandlers.delete(id);
+}
+
+// ── WebGL addon loader (GPU-accelerated rendering, falls back to DOM) ──
+function loadWebglAddon(terminal) {
+  try {
+    const webgl = new WebglAddon();
+    webgl.onContextLoss(() => {
+      webgl.dispose();
+    });
+    terminal.loadAddon(webgl);
+  } catch (e) {
+    console.warn('WebGL addon failed to load, using DOM renderer:', e.message);
+  }
 }
 
 // ── Throttled recordActivity (max 1 call/sec per project) ──
@@ -618,7 +632,8 @@ async function createTerminal(project, options = {}) {
     theme: getTerminalTheme(terminalThemeId),
     fontFamily: TERMINAL_FONTS.claude.fontFamily,
     fontSize: TERMINAL_FONTS.claude.fontSize,
-    cursorBlink: true
+    cursorBlink: true,
+    scrollback: 5000
   });
 
   const fitAddon = new FitAddon();
@@ -664,6 +679,7 @@ async function createTerminal(project, options = {}) {
   document.getElementById('empty-terminals').style.display = 'none';
 
   terminal.open(wrapper);
+  loadWebglAddon(terminal);
   setTimeout(() => fitAddon.fit(), 100);
   setActiveTerminal(id);
 
@@ -874,6 +890,7 @@ function createFivemConsole(project, projectIndex, options = {}) {
   // Open terminal in console view container
   const consoleView = wrapper.querySelector('.fivem-console-view');
   terminal.open(consoleView);
+  loadWebglAddon(terminal);
   setTimeout(() => fitAddon.fit(), 100);
   setActiveTerminal(id);
 
@@ -1715,7 +1732,8 @@ async function resumeSession(project, sessionId, options = {}) {
     theme: getTerminalTheme(terminalThemeId),
     fontFamily: TERMINAL_FONTS.claude.fontFamily,
     fontSize: TERMINAL_FONTS.claude.fontSize,
-    cursorBlink: true
+    cursorBlink: true,
+    scrollback: 5000
   });
 
   const fitAddon = new FitAddon();
@@ -1759,6 +1777,7 @@ async function resumeSession(project, sessionId, options = {}) {
   document.getElementById('empty-terminals').style.display = 'none';
 
   terminal.open(wrapper);
+  loadWebglAddon(terminal);
   setTimeout(() => fitAddon.fit(), 100);
   setActiveTerminal(id);
 
@@ -1974,7 +1993,8 @@ async function createTerminalWithPrompt(project, prompt) {
     theme: getTerminalTheme(terminalThemeId),
     fontFamily: TERMINAL_FONTS.claude.fontFamily,
     fontSize: TERMINAL_FONTS.claude.fontSize,
-    cursorBlink: true
+    cursorBlink: true,
+    scrollback: 5000
   });
 
   const fitAddon = new FitAddon();
@@ -2016,6 +2036,7 @@ async function createTerminalWithPrompt(project, prompt) {
   document.getElementById('empty-terminals').style.display = 'none';
 
   terminal.open(wrapper);
+  loadWebglAddon(terminal);
   setTimeout(() => fitAddon.fit(), 100);
   setActiveTerminal(id);
 
