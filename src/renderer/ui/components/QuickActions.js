@@ -270,13 +270,13 @@ function renderActionForm(action = null) {
       <div class="quick-action-form-row">
         <div class="quick-action-form-field">
           <label>${t('quickActions.name')}</label>
-          <input type="text" id="qa-form-name" value="${escapeHtml(action?.name || '')}" placeholder="${t('quickActions.namePlaceholder')}">
+          <input type="text" id="qa-form-name" placeholder="${t('quickActions.namePlaceholder')}">
         </div>
       </div>
       <div class="quick-action-form-row">
         <div class="quick-action-form-field">
           <label>${t('quickActions.command')}</label>
-          <input type="text" id="qa-form-command" value="${escapeHtml(action?.command || '')}" placeholder="${t('quickActions.commandPlaceholder')}">
+          <input type="text" id="qa-form-command" placeholder="${t('quickActions.commandPlaceholder')}">
         </div>
       </div>
       <div class="quick-action-form-row">
@@ -388,6 +388,10 @@ function showActionForm(project, action, listContainer) {
   // Setup form handlers
   const form = listContainer.querySelector('.quick-action-form');
   let selectedIcon = action?.icon || 'play';
+
+  // Set input values programmatically to avoid HTML attribute escaping issues
+  form.querySelector('#qa-form-name').value = action?.name || '';
+  form.querySelector('#qa-form-command').value = action?.command || '';
 
   // Icon selection
   form.querySelectorAll('.quick-action-icon-option').forEach(iconBtn => {
