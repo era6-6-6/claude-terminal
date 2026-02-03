@@ -4191,6 +4191,48 @@ api.tray.onShowSessions(() => {
   }
 });
 
+// ========== PROJECTS PANEL RESIZER ==========
+(function initProjectsPanelResizer() {
+  const resizer = document.getElementById('projects-panel-resizer');
+  const panel = document.querySelector('.projects-panel');
+  if (!resizer || !panel) return;
+
+  let startX, startWidth;
+
+  resizer.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    startX = e.clientX;
+    startWidth = panel.offsetWidth;
+    resizer.classList.add('active');
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+
+    const onMouseMove = (e) => {
+      const newWidth = Math.min(600, Math.max(200, startWidth + (e.clientX - startX)));
+      panel.style.width = newWidth + 'px';
+    };
+
+    const onMouseUp = () => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      resizer.classList.remove('active');
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      settingsState.setProp('projectsPanelWidth', panel.offsetWidth);
+      saveSettings();
+    };
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+
+  // Restore saved width
+  const savedWidth = settingsState.get().projectsPanelWidth;
+  if (savedWidth) {
+    panel.style.width = savedWidth + 'px';
+  }
+})();
+
 // ========== INIT ==========
 setupContextMenuHandlers();
 checkAllProjectsGitStatus();

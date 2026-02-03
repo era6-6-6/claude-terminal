@@ -11181,8 +11181,9 @@ body.compact-projects .project-item:not(.active):hover {
   bottom: 0;
 }
 
-.panel-resizer:hover {
-  background: var(--accent-color);
+.panel-resizer:hover,
+.panel-resizer.active {
+  background: var(--accent);
   opacity: 0.5;
 }
 
