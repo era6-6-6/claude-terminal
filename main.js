@@ -6,9 +6,17 @@
 const { app, globalShortcut } = require('electron');
 
 // ============================================
+// DEV MODE - Allow running alongside production
+// ============================================
+const isDev = process.argv.includes('--dev');
+if (isDev) {
+  app.setName('Claude Terminal Dev');
+}
+
+// ============================================
 // SINGLE INSTANCE LOCK - Must be first!
 // ============================================
-const gotTheLock = app.requestSingleInstanceLock();
+const gotTheLock = app.requestSingleInstanceLock(isDev ? { dev: true } : undefined);
 
 if (!gotTheLock) {
   app.quit();
