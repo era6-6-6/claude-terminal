@@ -187,7 +187,8 @@
     "standalone": "Standalone",
     "extFiles": "{count} fichiers - {lines} lignes",
     "copyPath": "Copier",
-    "tagCommitsBehind": "+{count} commits"
+    "tagCommitsBehind": "+{count} commits",
+    "pullRequests": "Pull Requests"
   },
   "customize": {
     "title": "Personnaliser l'apparence",

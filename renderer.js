@@ -545,6 +545,29 @@ async function checkAllProjectsGitStatus() {
   }
 }
 
+async function checkProjectGitStatus(project) {
+  try {
+    const result = await api.git.statusQuick({ projectPath: project.path });
+    const status = { isGitRepo: result.isGitRepo };
+    if (result.isGitRepo) {
+      try {
+        status.branch = await api.git.currentBranch({ projectPath: project.path });
+      } catch (_) {}
+    }
+    localState.gitRepoStatus.set(project.id, status);
+  } catch (e) {
+    localState.gitRepoStatus.set(project.id, { isGitRepo: false });
+  }
+  ProjectList.render();
+
+  // Update filter if this project is selected
+  const selectedFilter = projectsState.get().selectedProjectFilter;
+  const projects = projectsState.get().projects;
+  if (selectedFilter !== null && projects[selectedFilter]?.id === project.id) {
+    showFilterGitActions(project.id);
+  }
+}
+
 // ========== TOAST NOTIFICATIONS ==========
 const toastContainer = document.getElementById('toast-container');
 
@@ -3293,6 +3316,9 @@ document.getElementById('btn-new-project').onclick = () => {
     saveProjects();
     ProjectList.render();
     closeModal();
+
+    // Detect git status for the new project
+    checkProjectGitStatus(project);
   };
 };
 

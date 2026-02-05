@@ -153,6 +153,25 @@ async function getWorkflowRuns(remoteUrl) {
 }
 
 /**
+ * Get GitHub Pull Requests for a project
+ * @param {string} remoteUrl - Git remote URL
+ * @returns {Promise<Object>}
+ */
+async function getPullRequests(remoteUrl) {
+  if (!remoteUrl || !remoteUrl.includes('github.com')) {
+    return { pullRequests: [], notGitHub: true };
+  }
+
+  try {
+    const result = await api.github.pullRequests(remoteUrl);
+    return result;
+  } catch (e) {
+    console.error('[Dashboard] Error fetching pull requests:', e);
+    return { pullRequests: [], error: e.message };
+  }
+}
+
+/**
  * Load full dashboard data for a project
  * @param {string} projectPath
  * @returns {Promise<Object>}
@@ -163,17 +182,21 @@ async function loadDashboardData(projectPath) {
     getProjectStats(projectPath)
   ]);
 
-  // Fetch workflow runs if it's a GitHub repo
+  // Fetch workflow runs and pull requests if it's a GitHub repo
   let workflowRuns = { runs: [] };
+  let pullRequests = { pullRequests: [] };
   console.log('[Dashboard] gitInfo.remoteUrl:', gitInfo.remoteUrl);
   if (gitInfo.isGitRepo && gitInfo.remoteUrl) {
-    console.log('[Dashboard] Fetching workflow runs...');
-    workflowRuns = await getWorkflowRuns(gitInfo.remoteUrl);
+    console.log('[Dashboard] Fetching workflow runs and pull requests...');
+    [workflowRuns, pullRequests] = await Promise.all([
+      getWorkflowRuns(gitInfo.remoteUrl),
+      getPullRequests(gitInfo.remoteUrl)
+    ]);
   } else {
-    console.log('[Dashboard] Skipping workflow runs - not a git repo or no remote');
+    console.log('[Dashboard] Skipping GitHub data - not a git repo or no remote');
   }
 
-  return { gitInfo, stats, workflowRuns };
+  return { gitInfo, stats, workflowRuns, pullRequests };
 }
 
 /**
@@ -622,10 +645,86 @@ function buildWorkflowRunsHtml(workflowRuns) {
 }
 
 /**
+ * Build GitHub Pull Requests section HTML
+ * @param {Object} pullRequestsData - { pullRequests, authenticated, notGitHub, notFound }
+ * @returns {string}
+ */
+function buildPullRequestsHtml(pullRequestsData) {
+  if (!pullRequestsData || pullRequestsData.notGitHub || pullRequestsData.notFound) return '';
+  if (!pullRequestsData.authenticated) return '';
+  if (!pullRequestsData.pullRequests || pullRequestsData.pullRequests.length === 0) return '';
+
+  const getStateIcon = (state, draft) => {
+    if (draft) {
+      // Draft icon (circle with dashed outline)
+      return '<svg class="pr-icon draft" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8z"/></svg>';
+    }
+    if (state === 'merged') {
+      // Merge icon
+      return '<svg class="pr-icon merged" viewBox="0 0 24 24" fill="currentColor"><path d="M7 3a3 3 0 0 0-2 5.24V15.76a3 3 0 1 0 2 0V10.7a7.03 7.03 0 0 0 5 2.23 3 3 0 1 0 0-2 5.02 5.02 0 0 1-4.39-3.17A3 3 0 0 0 7 3z"/></svg>';
+    }
+    if (state === 'closed') {
+      // X icon
+      return '<svg class="pr-icon closed" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>';
+    }
+    // Open (git-pull-request icon)
+    return '<svg class="pr-icon open" viewBox="0 0 24 24" fill="currentColor"><path d="M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM6 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 4v6.76a3 3 0 1 0 2 0V11H6zm1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM18 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 4v6.76a3 3 0 1 0 2 0V11h-2zm1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>';
+  };
+
+  const getStateClass = (state, draft) => {
+    if (draft) return 'draft';
+    return state; // open, merged, closed
+  };
+
+  const formatTime = (dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return t('time.justNow') || 'just now';
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
+    return `${diffDays}d`;
+  };
+
+  return `
+    <div class="dashboard-section pull-requests-section">
+      <h3>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 3a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM6 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 4v6.76a3 3 0 1 0 2 0V11H6zm1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2zM18 7a1 1 0 1 1 0-2 1 1 0 0 1 0 2zm0 4v6.76a3 3 0 1 0 2 0V11h-2zm1 9a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"/></svg>
+        ${t('dashboard.pullRequests')}
+      </h3>
+      <div class="pull-requests-list">
+        ${pullRequestsData.pullRequests.map(pr => `
+          <div class="pull-request-item ${getStateClass(pr.state, pr.draft)}" data-url="${escapeHtml(pr.url)}">
+            <div class="pull-request-status">
+              ${getStateIcon(pr.state, pr.draft)}
+            </div>
+            <div class="pull-request-info">
+              <div class="pull-request-title">
+                <span class="pr-number">#${pr.number}</span>
+                ${escapeHtml(pr.title)}
+              </div>
+              <div class="pull-request-meta">
+                <span class="pr-author">${escapeHtml(pr.author)}</span>
+                ${pr.labels.length > 0 ? `<span class="pr-labels">${pr.labels.map(l => `<span class="pr-label" style="background: #${l.color}20; color: #${l.color}; border-color: #${l.color}40">${escapeHtml(l.name)}</span>`).join('')}</span>` : ''}
+                <span class="pr-time">${formatTime(pr.updatedAt)}</span>
+              </div>
+            </div>
+          </div>
+        `).join('')}
+      </div>
+    </div>
+  `;
+}
+
+/**
  * Render the dashboard HTML with given data
  * @param {HTMLElement} container
  * @param {Object} project
- * @param {Object} data - { gitInfo, stats, workflowRuns }
+ * @param {Object} data - { gitInfo, stats, workflowRuns, pullRequests }
  * @param {Object} options
  * @param {boolean} isRefreshing - Show refresh indicator
  */
@@ -641,7 +740,7 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
     onCopyPath
   } = options;
 
-  const { gitInfo, stats, workflowRuns } = data;
+  const { gitInfo, stats, workflowRuns, pullRequests } = data;
   const isFivem = project.type === 'fivem';
   const gitOps = getGitOperation(project.id);
   const hasMergeConflict = gitOps.mergeInProgress && gitOps.conflicts.length > 0;
@@ -732,6 +831,7 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
       <div class="dashboard-col">
         ${buildGitStatusHtml(gitInfo)}
         ${buildWorkflowRunsHtml(workflowRuns)}
+        ${buildPullRequestsHtml(pullRequests)}
       </div>
       <div class="dashboard-col">
         ${buildStatsHtml(stats, gitInfo)}
@@ -742,6 +842,17 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
 
   // Attach click handlers for workflow runs
   container.querySelectorAll('.workflow-run-item').forEach(item => {
+    item.addEventListener('click', () => {
+      const url = item.dataset.url;
+      if (url) {
+        api.dialog.openExternal(url);
+      }
+    });
+    item.style.cursor = 'pointer';
+  });
+
+  // Attach click handlers for pull requests
+  container.querySelectorAll('.pull-request-item').forEach(item => {
     item.addEventListener('click', () => {
       const url = item.dataset.url;
       if (url) {

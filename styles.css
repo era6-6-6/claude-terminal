@@ -6486,6 +6486,126 @@ body.compact-projects .project-item:not(.active):hover {
   margin-left: auto;
 }
 
+/* GitHub Pull Requests */
+.pull-requests-section {
+  margin-top: 16px;
+}
+
+.pull-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.pull-request-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  border-left: 3px solid transparent;
+  transition: background 0.15s ease, transform 0.1s ease;
+  cursor: pointer;
+}
+
+.pull-request-item:hover {
+  background: var(--bg-hover);
+  transform: translateX(2px);
+}
+
+.pull-request-item.open {
+  border-left-color: var(--success);
+}
+
+.pull-request-item.merged {
+  border-left-color: #8b5cf6;
+}
+
+.pull-request-item.closed {
+  border-left-color: var(--danger);
+}
+
+.pull-request-item.draft {
+  border-left-color: var(--text-muted);
+}
+
+.pull-request-status {
+  flex-shrink: 0;
+}
+
+.pr-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.pr-icon.open {
+  color: var(--success);
+}
+
+.pr-icon.merged {
+  color: #8b5cf6;
+}
+
+.pr-icon.closed {
+  color: var(--danger);
+}
+
+.pr-icon.draft {
+  color: var(--text-muted);
+}
+
+.pull-request-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pull-request-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pr-number {
+  color: var(--text-muted);
+  font-weight: 400;
+  margin-right: 4px;
+}
+
+.pull-request-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 2px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.pr-author {
+  font-weight: 500;
+}
+
+.pr-labels {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.pr-label {
+  padding: 0 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  border: 1px solid;
+  line-height: 16px;
+}
+
+.pr-time {
+  margin-left: auto;
+}
+
 /* No git state */
 .dashboard-no-git {
   display: flex;

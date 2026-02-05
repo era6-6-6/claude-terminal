@@ -300,6 +300,59 @@ function parseGitHubRemote(remoteUrl) {
   return null;
 }
 
+/**
+ * Get pull requests for a repository
+ * @param {string} owner - Repository owner
+ * @param {string} repo - Repository name
+ * @param {number} perPage - Number of results (default: 5)
+ * @returns {Promise<Object>} - Pull requests data
+ */
+async function getPullRequests(owner, repo, perPage = 5) {
+  const token = await getToken();
+  if (!token) {
+    return { authenticated: false, pullRequests: [] };
+  }
+
+  try {
+    const response = await httpsRequest({
+      hostname: 'api.github.com',
+      path: `/repos/${owner}/${repo}/pulls?per_page=${perPage}&state=all&sort=updated&direction=desc`,
+      method: 'GET',
+      headers: {
+        'Accept': 'application/vnd.github.v3+json',
+        'Authorization': `Bearer ${token}`,
+        'User-Agent': 'Claude-Terminal'
+      }
+    });
+
+    if (response.status === 200) {
+      const pullRequests = (response.data || []).map(pr => ({
+        id: pr.id,
+        number: pr.number,
+        title: pr.title,
+        state: pr.merged_at ? 'merged' : pr.state, // open, closed, merged
+        draft: pr.draft || false,
+        author: pr.user?.login,
+        createdAt: pr.created_at,
+        updatedAt: pr.updated_at,
+        url: pr.html_url,
+        labels: (pr.labels || []).map(l => ({ name: l.name, color: l.color }))
+      }));
+
+      return { authenticated: true, pullRequests };
+    }
+
+    if (response.status === 404) {
+      return { authenticated: true, pullRequests: [], notFound: true };
+    }
+
+    return { authenticated: true, pullRequests: [], error: `API error: ${response.status}` };
+  } catch (e) {
+    console.error('Error fetching pull requests:', e);
+    return { authenticated: true, pullRequests: [], error: e.message };
+  }
+}
+
 module.exports = {
   startDeviceFlow,
   pollForToken,
@@ -309,5 +362,6 @@ module.exports = {
   getAuthStatus,
   getTokenForGit,
   getWorkflowRuns,
+  getPullRequests,
   parseGitHubRemote
 };

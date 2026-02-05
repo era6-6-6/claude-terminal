@@ -134,7 +134,8 @@
     "standalone": "Standalone",
     "extFiles": "{count} files - {lines} lines",
     "copyPath": "Copy",
-    "tagCommitsBehind": "+{count} commits"
+    "tagCommitsBehind": "+{count} commits",
+    "pullRequests": "Pull Requests"
   },
   "customize": {
     "title": "Customize appearance",
