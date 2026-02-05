@@ -3340,6 +3340,13 @@ async function showFilterGitActions(projectId) {
   currentFilterProjectId = projectId;
   filterGitActions.style.display = 'flex';
 
+  // Reset button states based on this project's git operations
+  const gitOps = localState.gitOperations.get(projectId) || {};
+  filterBtnPull.classList.toggle('loading', !!gitOps.pulling);
+  filterBtnPull.disabled = !!gitOps.pulling;
+  filterBtnPush.classList.toggle('loading', !!gitOps.pushing);
+  filterBtnPush.disabled = !!gitOps.pushing;
+
   // Get current branch
   try {
     const branch = await api.git.currentBranch({ projectPath: project.path });
@@ -3352,19 +3359,31 @@ async function showFilterGitActions(projectId) {
 // Pull button
 filterBtnPull.onclick = async () => {
   if (!currentFilterProjectId) return;
+  const projectId = currentFilterProjectId;
   filterBtnPull.classList.add('loading');
-  await gitPull(currentFilterProjectId);
+  filterBtnPull.disabled = true;
+  await gitPull(projectId);
   branchCache = { projectId: null, data: null };
-  filterBtnPull.classList.remove('loading');
+  // Only remove loading if we're still on the same project
+  if (currentFilterProjectId === projectId) {
+    filterBtnPull.classList.remove('loading');
+    filterBtnPull.disabled = false;
+  }
 };
 
 // Push button
 filterBtnPush.onclick = async () => {
   if (!currentFilterProjectId) return;
+  const projectId = currentFilterProjectId;
   filterBtnPush.classList.add('loading');
-  await gitPush(currentFilterProjectId);
+  filterBtnPush.disabled = true;
+  await gitPush(projectId);
   branchCache = { projectId: null, data: null };
-  filterBtnPush.classList.remove('loading');
+  // Only remove loading if we're still on the same project
+  if (currentFilterProjectId === projectId) {
+    filterBtnPush.classList.remove('loading');
+    filterBtnPush.disabled = false;
+  }
 };
 
 // Branch button - toggle dropdown
