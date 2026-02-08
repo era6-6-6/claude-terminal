@@ -859,6 +859,36 @@ function getProjectEditor(projectId) {
   return project?.preferredEditor || null;
 }
 
+/**
+ * Get projects in visual display order (flattened from rootOrder + folder children)
+ * @returns {Array<Object>} - Projects in the order they appear in the sidebar
+ */
+function getVisualProjectOrder() {
+  const state = projectsState.get();
+  const result = [];
+
+  function collectFromItems(itemIds) {
+    for (const itemId of itemIds) {
+      const folder = state.folders.find(f => f.id === itemId);
+      if (folder) {
+        collectFromItems(folder.children || []);
+        // Also collect legacy projects not in children array
+        state.projects.forEach(p => {
+          if (p.folderId === folder.id && !(folder.children || []).includes(p.id)) {
+            result.push(p);
+          }
+        });
+      } else {
+        const project = state.projects.find(p => p.id === itemId);
+        if (project) result.push(project);
+      }
+    }
+  }
+
+  collectFromItems(state.rootOrder || []);
+  return result;
+}
+
 module.exports = {
   projectsState,
   generateFolderId,
@@ -898,5 +928,7 @@ module.exports = {
   reorderQuickActions,
   // Editor per project
   setProjectEditor,
-  getProjectEditor
+  getProjectEditor,
+  // Visual order
+  getVisualProjectOrder
 };

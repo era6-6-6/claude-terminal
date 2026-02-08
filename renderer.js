@@ -30,6 +30,7 @@ const {
   getFolder,
   getProject,
   getProjectIndex,
+  getVisualProjectOrder,
   loadProjects,
   saveProjects,
   loadSettings,
@@ -1177,15 +1178,14 @@ TerminalManager.setCallbacks({
     const projects = projectsState.get().projects;
     const terminals = terminalsState.get().terminals;
 
-    // Get projects that have at least one terminal open (use path for stable comparison)
-    const projectsWithTerminals = projects
-      .map((p, idx) => ({ project: p, index: idx }))
-      .filter(({ project }) => {
-        for (const [, t] of terminals) {
-          if (t.project && t.project.path === project.path) return true;
-        }
-        return false;
-      });
+    // Get projects in visual (sidebar) order, filtered to those with open terminals
+    const visualOrder = getVisualProjectOrder();
+    const projectsWithTerminals = visualOrder.filter(project => {
+      for (const [, t] of terminals) {
+        if (t.project && t.project.path === project.path) return true;
+      }
+      return false;
+    });
 
     if (projectsWithTerminals.length <= 1) return;
 
@@ -1193,12 +1193,11 @@ TerminalManager.setCallbacks({
     const currentFilter = projectsState.get().selectedProjectFilter;
     const currentProject = projects[currentFilter];
     const currentIdx = currentProject
-      ? projectsWithTerminals.findIndex(p => p.project.path === currentProject.path)
+      ? projectsWithTerminals.findIndex(p => p.path === currentProject.path)
       : -1;
 
     let targetIdx;
     if (currentIdx === -1) {
-      // No valid current project, start from first
       targetIdx = 0;
     } else if (direction === 'up') {
       targetIdx = (currentIdx - 1 + projectsWithTerminals.length) % projectsWithTerminals.length;
@@ -1207,9 +1206,10 @@ TerminalManager.setCallbacks({
     }
 
     const targetProject = projectsWithTerminals[targetIdx];
-    setSelectedProjectFilter(targetProject.index);
+    const targetIndex = getProjectIndex(targetProject.id);
+    setSelectedProjectFilter(targetIndex);
     ProjectList.render();
-    TerminalManager.filterByProject(targetProject.index);
+    TerminalManager.filterByProject(targetIndex);
   }
 });
 
