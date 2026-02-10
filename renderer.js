@@ -46,7 +46,7 @@ const {
   initializeState,
 
   // Services
-  services: { DashboardService, FivemService, TimeTrackingDashboard },
+  services: { DashboardService, FivemService, TimeTrackingDashboard, GitTabService },
 
   // UI Components
   ProjectList,
@@ -80,6 +80,9 @@ const {
   // Quick Actions
   QuickActions
 } = require('./src/renderer');
+
+const registry = require('./src/project-types/registry');
+const { mergeTranslations } = require('./src/renderer/i18n');
 
 // ========== LOCAL MODAL FUNCTIONS ==========
 // These work with the existing HTML modal elements in index.html
@@ -485,6 +488,11 @@ function registerAllShortcuts() {
 ensureDirectories();
 initializeState(); // This loads settings, projects AND initializes time tracking
 initI18n(settingsState.get().language); // Initialize i18n with saved language preference
+
+// Initialize project types registry
+registry.discoverAll();
+registry.loadAllTranslations(mergeTranslations);
+registry.injectAllStyles();
 
 // Preload dashboard data in background at startup
 DashboardService.loadAllDiskCaches();
@@ -981,6 +989,65 @@ FivemService.registerFivemListeners(
   }
 );
 
+// ========== WEBAPP ==========
+async function startWebAppServer(projectIndex) {
+  const projects = projectsState.get().projects;
+  const project = projects[projectIndex];
+  if (!project) return;
+
+  const { startDevServer } = require('./src/project-types/webapp/renderer/WebAppRendererService');
+  await startDevServer(projectIndex);
+  ProjectList.render();
+}
+
+async function stopWebAppServer(projectIndex) {
+  const { stopDevServer } = require('./src/project-types/webapp/renderer/WebAppRendererService');
+  await stopDevServer(projectIndex);
+  ProjectList.render();
+}
+
+function openWebAppConsole(projectIndex) {
+  const projects = projectsState.get().projects;
+  const project = projects[projectIndex];
+  if (!project) return;
+
+  TerminalManager.createWebAppConsole(project, projectIndex);
+}
+
+function refreshWebAppInfoPanel(projectIndex) {
+  // Find webapp console wrapper and re-render info if the Info tab is active
+  const consoleTerminal = TerminalManager.getWebAppConsoleTerminal(projectIndex);
+  if (!consoleTerminal) return;
+  const wrappers = document.querySelectorAll('.terminal-wrapper.webapp-wrapper');
+  wrappers.forEach(wrapper => {
+    const activeTab = wrapper.querySelector('.webapp-view-tab.active');
+    if (activeTab && activeTab.dataset.view === 'info') {
+      const projects = projectsState.get().projects;
+      const project = projects[projectIndex];
+      if (project) {
+        const { renderInfoView } = require('./src/project-types/webapp/renderer/WebAppTerminalPanel');
+        renderInfoView(wrapper, projectIndex, project, { t });
+      }
+    }
+  });
+}
+
+// Register WebApp listeners - write to TerminalManager's WebApp console
+api.webapp.onData(({ projectIndex, data }) => {
+  TerminalManager.writeWebAppConsole(projectIndex, data);
+});
+
+api.webapp.onExit(({ projectIndex, code }) => {
+  TerminalManager.writeWebAppConsole(projectIndex, `\r\n[Dev server exited with code ${code}]\r\n`);
+  ProjectList.render();
+});
+
+api.webapp.onPortDetected(({ projectIndex, port }) => {
+  ProjectList.render();
+  // Re-render Info panel if currently visible
+  refreshWebAppInfoPanel(projectIndex);
+});
+
 // ========== DELETE PROJECT ==========
 function deleteProjectUI(projectId) {
   const project = getProject(projectId);
@@ -988,8 +1055,10 @@ function deleteProjectUI(projectId) {
   const projectIndex = getProjectIndex(projectId);
   if (!confirm(`Supprimer "${project.name}" ?`)) return;
 
-  if (project.type === 'fivem' && localState.fivemServers.get(projectIndex)?.status !== 'stopped') {
-    stopFivemServer(projectIndex);
+  // Stop any type-specific running processes (e.g., FiveM server)
+  const deleteTypeHandler = registry.get(project.type);
+  if (deleteTypeHandler.onProjectDelete) {
+    deleteTypeHandler.onProjectDelete(project, projectIndex);
   }
 
   const projects = projectsState.get().projects.filter(p => p.id !== projectId);
@@ -1157,6 +1226,9 @@ ProjectList.setCallbacks({
   onStartFivem: startFivemServer,
   onStopFivem: stopFivemServer,
   onOpenFivemConsole: openFivemConsole,
+  onStartWebApp: startWebAppServer,
+  onStopWebApp: stopWebAppServer,
+  onOpenWebAppConsole: openWebAppConsole,
   onGitPull: gitPull,
   onGitPush: gitPush,
   onDeleteProject: deleteProjectUI,
@@ -1395,6 +1467,10 @@ document.querySelectorAll('.nav-tab').forEach(tab => {
     if (tabId === 'skills') loadSkills();
     if (tabId === 'agents') loadAgents();
     if (tabId === 'mcp') loadMcps();
+    if (tabId === 'git') {
+      GitTabService.initGitTab();
+      GitTabService.renderProjectsList();
+    }
     if (tabId === 'dashboard') {
       populateDashboardProjects();
       if (localState.selectedDashboardProject === -1) {
@@ -1642,6 +1718,18 @@ async function renderSettingsTab(initialTab = 'general') {
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
           Raccourcis
         </button>
+        ${(() => {
+          const registry = require('./src/project-types/registry');
+          const dynamicTabs = registry.collectAllSettingsFields();
+          let tabsHtml = '';
+          dynamicTabs.forEach((tabData, tabId) => {
+            tabsHtml += `<button class="settings-tab ${initialTab === tabId ? 'active' : ''}" data-tab="${tabId}">
+              ${tabData.icon}
+              ${tabData.label}
+            </button>`;
+          });
+          return tabsHtml;
+        })()}
       </div>
       <div class="settings-content">
         <!-- General Tab -->
@@ -1853,6 +1941,50 @@ async function renderSettingsTab(initialTab = 'general') {
         <div class="settings-panel ${initialTab === 'shortcuts' ? 'active' : ''}" data-panel="shortcuts">
           ${renderShortcutsPanel()}
         </div>
+        ${(() => {
+          const registry = require('./src/project-types/registry');
+          const dynamicTabs = registry.collectAllSettingsFields();
+          let panelsHtml = '';
+          dynamicTabs.forEach((tabData, tabId) => {
+            let sectionsHtml = '';
+            tabData.sections.forEach((section) => {
+              const sectionName = section.typeName.includes('.') ? t(section.typeName) || section.typeName : section.typeName;
+              let fieldsHtml = '';
+              for (const field of section.fields) {
+                const fieldLabel = field.labelKey ? t(field.labelKey) || field.label : field.label;
+                const fieldDesc = field.descKey ? t(field.descKey) || field.description : field.description;
+                const currentValue = settingsState.get()[field.key];
+                const value = currentValue !== undefined ? currentValue : field.default;
+                if (field.type === 'toggle') {
+                  fieldsHtml += `
+                    <div class="settings-toggle-row">
+                      <div class="settings-toggle-label">
+                        <div>${fieldLabel}</div>
+                        ${fieldDesc ? `<div class="settings-toggle-desc">${fieldDesc}</div>` : ''}
+                      </div>
+                      <label class="settings-toggle">
+                        <input type="checkbox" class="dynamic-setting-toggle" data-setting-key="${field.key}" ${value ? 'checked' : ''}>
+                        <span class="settings-toggle-slider"></span>
+                      </label>
+                    </div>`;
+                }
+              }
+              sectionsHtml += `
+                <div class="settings-section">
+                  <div class="settings-title">
+                    <span class="settings-title-icon">${section.typeIcon}</span>
+                    ${sectionName}
+                  </div>
+                  ${fieldsHtml}
+                </div>`;
+            });
+            panelsHtml += `
+              <div class="settings-panel ${initialTab === tabId ? 'active' : ''}" data-panel="${tabId}">
+                ${sectionsHtml}
+              </div>`;
+          });
+          return panelsHtml;
+        })()}
       </div>
       <div class="settings-inline-footer">
         <button type="button" class="btn-primary" id="btn-save-settings">Sauvegarder</button>
@@ -2077,6 +2209,12 @@ async function renderSettingsTab(initialTab = 'general') {
       language: newLanguage,
       compactProjects: newCompactProjects
     };
+
+    // Collect dynamic settings from project types
+    container.querySelectorAll('.dynamic-setting-toggle').forEach(toggle => {
+      newSettings[toggle.dataset.settingKey] = toggle.checked;
+    });
+
     settingsState.set(newSettings);
     saveSettings();
 
@@ -2631,11 +2769,11 @@ function populateDashboardProjects() {
       ? `<span class="dash-folder-color" style="background: ${project.color}"></span>`
       : '';
 
+    const dashTypeHandler = registry.get(project.type);
+    const dashTypeIcon = dashTypeHandler.getDashboardIcon ? dashTypeHandler.getDashboardIcon(project) : null;
     const iconHtml = project.icon
       ? `<span class="dashboard-project-emoji">${project.icon}</span>`
-      : (project.type === 'fivem'
-        ? '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16V4H3v12h18m0-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7v2h2v2H8v-2h2v-2H3a2 2 0 0 1-2-2V4c0-1.11.89-2 2-2h18"/></svg>'
-        : '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>');
+      : (dashTypeIcon || '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>');
 
     return `
       <div class="dashboard-project-item ${isActive ? 'active' : ''}" data-index="${index}" style="padding-left: ${indent}px">
@@ -3457,78 +3595,90 @@ function saveMemoryEdit() {
 
 // ========== NEW PROJECT ==========
 document.getElementById('btn-new-project').onclick = () => {
-  showModal('Nouveau Projet', `
+  const projectTypes = registry.getAll();
+  const categoriesGrouped = registry.getByCategory();
+
+  const buildTypeRows = () => categoriesGrouped.map(({ category: cat, types }) => `
+      <div class="project-type-category">${t(cat.nameKey)}</div>
+      ${types.map(tp => `
+        <div class="project-type-row${tp.id === 'standalone' ? ' selected' : ''}" data-type="${tp.id}">
+          <div class="project-type-icon${tp.id !== 'standalone' ? ' ' + tp.id : ''}">${tp.icon}</div>
+          <div class="project-type-info">
+            <div class="project-type-name">${t(tp.nameKey)}</div>
+            <div class="project-type-desc">${t(tp.descKey)}</div>
+          </div>
+          <div class="project-type-check"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
+        </div>
+      `).join('')}
+    `).join('');
+
+  showModal(t('newProject.title'), `
     <form id="form-project">
-      <div class="form-group">
-        <label>Source du projet</label>
-        <div class="source-selector">
-          <div class="source-option selected" data-source="folder">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
-            <span>Dossier existant</span>
-          </div>
-          <div class="source-option" data-source="create">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3H9v-2h3V9h2v3h3v2z"/></svg>
-            <span>Creer un nouveau</span>
-          </div>
-          <div class="source-option" data-source="clone">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/></svg>
-            <span>Cloner un repo</span>
-          </div>
+      <div class="wizard-step active" data-step="1">
+        <div class="wizard-step-header">${t('newProject.stepType')}</div>
+        <div class="project-type-list">
+          ${buildTypeRows()}
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" onclick="closeModal()">${t('common.cancel')}</button>
+          <button type="button" class="btn-primary" id="btn-next-step">${t('newProject.next')}</button>
         </div>
       </div>
-      <div class="form-group clone-config" style="display: none;">
-        <label>URL du repository</label>
-        <input type="text" id="inp-repo-url" placeholder="https://github.com/user/repo.git">
-        <div class="github-status-hint" id="github-status-hint"></div>
-      </div>
-      <div class="form-group">
-        <label>Nom du projet</label>
-        <input type="text" id="inp-name" placeholder="Mon Projet" required>
-      </div>
-      <div class="form-group">
-        <label id="label-path">Chemin du projet</label>
-        <div class="input-with-btn">
-          <input type="text" id="inp-path" placeholder="C:\\chemin\\projet" required>
-          <button type="button" class="btn-browse" id="btn-browse">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
-          </button>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Type de projet</label>
-        <div class="type-selector">
-          <div class="type-card selected" data-type="standalone">
-            <div class="type-card-icon"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg></div>
-            <div class="type-card-content"><div class="type-card-title">Standalone</div><div class="type-card-desc">Terminal Claude classique</div></div>
-          </div>
-          <div class="type-card" data-type="fivem">
-            <div class="type-card-icon fivem"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16V4H3v12h18m0-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7v2h2v2H8v-2h2v-2H3a2 2 0 0 1-2-2V4c0-1.11.89-2 2-2h18"/></svg></div>
-            <div class="type-card-content"><div class="type-card-title">FiveM Server</div><div class="type-card-desc">Demarrer/arreter FXServer</div></div>
+      <div class="wizard-step" data-step="2">
+        <div class="wizard-step-header">${t('newProject.stepConfig')}</div>
+        <div class="wizard-type-badge" id="wizard-type-badge"></div>
+        <div class="form-group">
+          <label>${t('newProject.source')}</label>
+          <div class="source-selector">
+            <div class="source-option selected" data-source="folder">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+              <span>${t('newProject.sourceFolder')}</span>
+            </div>
+            <div class="source-option" data-source="create">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm-1 8h-3v3h-2v-3H9v-2h3V9h2v3h3v2z"/></svg>
+              <span>${t('newProject.sourceCreate')}</span>
+            </div>
+            <div class="source-option" data-source="clone">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 12v7H5v-7H3v7c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2zm-6 .67l2.59-2.58L17 11.5l-5 5-5-5 1.41-1.41L11 12.67V3h2v9.67z"/></svg>
+              <span>${t('newProject.sourceClone')}</span>
+            </div>
           </div>
         </div>
-      </div>
-      <div class="form-group create-git-config" style="display: none;">
-        <label class="checkbox-label">
-          <input type="checkbox" id="chk-init-git" checked>
-          <span>Initialiser un repo Git</span>
-        </label>
-      </div>
-      <div class="form-group fivem-config" style="display: none;">
-        <label>Script de lancement</label>
-        <div class="input-with-button">
-          <input type="text" id="inp-fivem-cmd" placeholder="C:\\Serveur\\run.bat">
-          <button type="button" id="btn-browse-fivem" class="btn-browse">Parcourir</button>
+        <div class="form-group clone-config" style="display: none;">
+          <label>${t('newProject.repoUrl')}</label>
+          <input type="text" id="inp-repo-url" placeholder="https://github.com/user/repo.git">
+          <div class="github-status-hint" id="github-status-hint"></div>
         </div>
-      </div>
-      <div class="form-group clone-status" style="display: none;">
-        <div class="clone-progress">
-          <span class="clone-progress-text">Clonage en cours...</span>
-          <div class="clone-progress-bar"><div class="clone-progress-fill"></div></div>
+        <div class="form-group">
+          <label>${t('newProject.projectName')}</label>
+          <input type="text" id="inp-name" placeholder="${t('newProject.projectNamePlaceholder')}" required>
         </div>
-      </div>
-      <div class="form-actions">
-        <button type="button" class="btn-cancel" onclick="closeModal()">Annuler</button>
-        <button type="submit" class="btn-primary" id="btn-create-project">Creer</button>
+        <div class="form-group">
+          <label id="label-path">${t('newProject.projectPath')}</label>
+          <div class="input-with-btn">
+            <input type="text" id="inp-path" placeholder="C:\\chemin\\projet" required>
+            <button type="button" class="btn-browse" id="btn-browse">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="form-group create-git-config" style="display: none;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="chk-init-git" checked>
+            <span>${t('newProject.initGit')}</span>
+          </label>
+        </div>
+        <div class="type-specific-fields">${projectTypes.map(tp => tp.getWizardFields()).filter(Boolean).join('')}</div>
+        <div class="form-group clone-status" style="display: none;">
+          <div class="clone-progress">
+            <span class="clone-progress-text">${t('newProject.cloning')}</span>
+            <div class="clone-progress-bar"><div class="clone-progress-fill"></div></div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn-cancel" id="btn-prev-step">${t('newProject.back')}</button>
+          <button type="submit" class="btn-primary" id="btn-create-project">${t('newProject.create')}</button>
+        </div>
       </div>
     </form>
   `);
@@ -3536,6 +3686,43 @@ document.getElementById('btn-new-project').onclick = () => {
   let selectedType = 'standalone';
   let selectedSource = 'folder';
   let githubConnected = false;
+
+  // Wizard navigation
+  function goToStep(step) {
+    document.querySelectorAll('.wizard-step').forEach(s => s.classList.remove('active'));
+    document.querySelector(`.wizard-step[data-step="${step}"]`).classList.add('active');
+    if (step === 2) {
+      const tp = registry.get(selectedType);
+      const badge = document.getElementById('wizard-type-badge');
+      if (tp && badge) {
+        badge.innerHTML = `<span class="wizard-type-badge-icon${tp.id !== 'standalone' ? ' ' + tp.id : ''}">${tp.icon}</span><span>${t(tp.nameKey)}</span>`;
+      }
+      // Show/hide type-specific config fields
+      const form = document.getElementById('form-project');
+      projectTypes.forEach(handler => {
+        if (handler.onWizardTypeSelected) {
+          handler.onWizardTypeSelected(form, handler.id === selectedType);
+        }
+      });
+      // Bind type-specific events
+      const currentType = registry.get(selectedType);
+      if (currentType.bindWizardEvents) {
+        currentType.bindWizardEvents(form, api);
+      }
+    }
+  }
+
+  document.getElementById('btn-next-step').onclick = () => goToStep(2);
+  document.getElementById('btn-prev-step').onclick = () => goToStep(1);
+
+  // Type selection (step 1)
+  document.querySelectorAll('.project-type-row').forEach(row => {
+    row.onclick = () => {
+      document.querySelectorAll('.project-type-row').forEach(r => r.classList.remove('selected'));
+      row.classList.add('selected');
+      selectedType = row.dataset.type;
+    };
+  });
 
   // Check GitHub auth status (simple hint)
   async function updateGitHubHint() {
@@ -3571,14 +3758,14 @@ document.getElementById('btn-new-project').onclick = () => {
       document.querySelector('.clone-config').style.display = isClone ? 'block' : 'none';
       document.querySelector('.create-git-config').style.display = isCreate ? 'block' : 'none';
       if (isClone) {
-        document.getElementById('label-path').textContent = 'Dossier de destination';
+        document.getElementById('label-path').textContent = t('newProject.destFolder');
         document.getElementById('inp-path').placeholder = 'C:\\chemin\\destination';
         updateGitHubHint();
       } else if (isCreate) {
-        document.getElementById('label-path').textContent = 'Dossier parent';
+        document.getElementById('label-path').textContent = t('newProject.parentFolder');
         document.getElementById('inp-path').placeholder = 'C:\\chemin\\parent';
       } else {
-        document.getElementById('label-path').textContent = 'Chemin du projet';
+        document.getElementById('label-path').textContent = t('newProject.projectPath');
         document.getElementById('inp-path').placeholder = 'C:\\chemin\\projet';
       }
     };
@@ -3594,15 +3781,6 @@ document.getElementById('btn-new-project').onclick = () => {
     }
   });
 
-  document.querySelectorAll('.type-card').forEach(card => {
-    card.onclick = () => {
-      document.querySelectorAll('.type-card').forEach(c => c.classList.remove('selected'));
-      card.classList.add('selected');
-      selectedType = card.dataset.type;
-      document.querySelector('.fivem-config').style.display = selectedType === 'fivem' ? 'block' : 'none';
-    };
-  });
-
   document.getElementById('btn-browse').onclick = async () => {
     const folder = await api.dialog.selectFolder();
     if (folder) {
@@ -3611,11 +3789,6 @@ document.getElementById('btn-new-project').onclick = () => {
         document.getElementById('inp-name').value = path.basename(folder);
       }
     }
-  };
-
-  document.getElementById('btn-browse-fivem').onclick = async () => {
-    const file = await api.dialog.selectFile({ filters: [{ name: 'Scripts', extensions: ['bat', 'cmd', 'sh', 'exe'] }] });
-    if (file) document.getElementById('inp-fivem-cmd').value = file;
   };
 
   document.getElementById('form-project').onsubmit = async (e) => {
@@ -3691,19 +3864,22 @@ document.getElementById('btn-new-project').onclick = () => {
         if (!result.success) {
           cloneStatus.innerHTML = `<div class="clone-error">${result.error}</div>`;
           submitBtn.disabled = false;
-          submitBtn.textContent = 'Creer';
+          submitBtn.textContent = t('newProject.create');
           return;
         }
       } catch (err) {
         cloneStatus.innerHTML = `<div class="clone-error">${err.message}</div>`;
         submitBtn.disabled = false;
-        submitBtn.textContent = 'Creer';
+        submitBtn.textContent = t('newProject.create');
         return;
       }
     }
 
     const project = { id: generateProjectId(), name, path: projPath, type: selectedType, folderId: null };
-    if (selectedType === 'fivem') project.fivemConfig = { runCommand: document.getElementById('inp-fivem-cmd').value.trim() };
+    // Merge type-specific wizard config
+    const typeHandler = registry.get(selectedType);
+    const typeConfig = typeHandler.getWizardConfig(document.getElementById('form-project'));
+    Object.assign(project, typeConfig);
 
     const projects = [...projectsState.get().projects, project];
     const rootOrder = [...projectsState.get().rootOrder, project.id];

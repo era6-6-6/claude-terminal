@@ -51,6 +51,15 @@ function initialize() {
     }
   );
 
+  // Register WebApp listeners
+  const { registerWebAppListeners } = require('../project-types/webapp/renderer/WebAppRendererService');
+  registerWebAppListeners(
+    (projectIndex, data) => {},
+    (projectIndex, code) => {
+      // WebApp dev server stopped - re-render sidebar
+    }
+  );
+
   services.FivemService.registerFivemListeners(
     // onData callback
     (projectIndex, data) => {

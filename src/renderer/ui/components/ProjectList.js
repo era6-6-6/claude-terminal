@@ -34,6 +34,7 @@ const { escapeHtml } = require('../../utils');
 const { formatDuration } = require('../../utils/format');
 const { t } = require('../../i18n');
 const CustomizePicker = require('./CustomizePicker');
+const registry = require('../../../project-types/registry');
 
 // Local state
 let dragState = { dragging: null, dropTarget: null };
@@ -152,7 +153,7 @@ function renderProjectHtml(project, depth) {
   const projectIndex = getProjectIndex(project.id);
   const terminalStats = callbacks.getTerminalStatsForProject(projectIndex);
   const isSelected = projectsState.get().selectedProjectFilter === projectIndex;
-  const isFivem = project.type === 'fivem';
+  const typeHandler = registry.get(project.type);
   const fivemStatus = fivemServers.get(projectIndex)?.status || 'stopped';
   const gitOps = gitOperations.get(project.id) || { pulling: false, pushing: false };
   const isGitRepo = gitRepoStatus.get(project.id)?.isGitRepo || false;
@@ -160,28 +161,17 @@ function renderProjectHtml(project, depth) {
   const isStarting = fivemStatus === 'starting';
   const projectColor = project.color || null;
 
-  let primaryActionsHtml = '';
-  if (isFivem) {
-    if (isRunning || isStarting) {
-      primaryActionsHtml = `
-        <button class="btn-action-icon btn-fivem-console" data-project-id="${project.id}" title="${t('fivem.serverConsole')}">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg>
-        </button>
-        <button class="btn-action-primary btn-fivem-stop" data-project-id="${project.id}" title="${t('fivem.stopServer')}">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
-        </button>`;
-    } else {
-      primaryActionsHtml = `
-        <button class="btn-action-primary btn-fivem-start" data-project-id="${project.id}" title="${t('fivem.startServer')}">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-        </button>`;
-    }
-  } else {
-    primaryActionsHtml = `
-      <button class="btn-action-icon btn-claude" data-project-id="${project.id}" title="${t('projects.openClaude')}">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg>
-      </button>`;
-  }
+  const typeCtx = { project, projectIndex, fivemStatus, isRunning, isStarting, projectColor, escapeHtml, t };
+
+  // Claude terminal button (always present)
+  const claudeBtn = `
+    <button class="btn-action-icon btn-claude" data-project-id="${project.id}" title="${t('projects.openClaude')}">
+      <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg>
+    </button>`;
+
+  // Get additional action buttons from type handler
+  const typeSidebarButtons = typeHandler.getSidebarButtons(typeCtx) || '';
+  const primaryActionsHtml = typeSidebarButtons + claudeBtn;
 
   // Customize button for menu (opens the CustomizePicker)
   const projectIcon = project.icon || null;
@@ -189,12 +179,9 @@ function renderProjectHtml(project, depth) {
   const customizeColorDot = projectColor ? `<span class="customize-preview-dot" style="background: ${projectColor}"></span>` : '';
 
   let menuItemsHtml = '';
-  if (isFivem) {
-    menuItemsHtml += `
-      <button class="more-actions-item btn-claude" data-project-id="${project.id}">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg>
-        Claude Code
-      </button>`;
+  const typeMenuItems = typeHandler.getMenuItems ? typeHandler.getMenuItems(typeCtx) : '';
+  if (typeMenuItems) {
+    menuItemsHtml += typeMenuItems;
   }
   if (isGitRepo) {
     menuItemsHtml += `
@@ -236,7 +223,7 @@ function renderProjectHtml(project, depth) {
       ${t('common.delete')}
     </button>`;
 
-  const statusIndicator = isFivem ? `<span class="fivem-status-dot ${fivemStatus}" title="${fivemStatus === 'stopped' ? t('fivem.stopped') : fivemStatus === 'starting' ? t('fivem.starting') : t('fivem.running')}"></span>` : '';
+  const statusIndicator = typeHandler.getStatusIndicator(typeCtx);
   const colorIndicator = projectColor ? `<span class="color-indicator" style="background: ${projectColor}"></span>` : '';
 
   // Get time tracking data
@@ -247,8 +234,9 @@ function renderProjectHtml(project, depth) {
 
   // Build project icon HTML
   let projectIconHtml;
-  if (isFivem) {
-    projectIconHtml = `${statusIndicator}<svg viewBox="0 0 24 24" fill="currentColor" class="fivem-icon" ${iconColorStyle}><path d="M21 16V4H3v12h18m0-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7v2h2v2H8v-2h2v-2H3a2 2 0 0 1-2-2V4c0-1.11.89-2 2-2h18M5 6h9v5H5V6m10 0h4v2h-4V6m4 3v5h-4V9h4M5 12h4v2H5v-2m5 0h4v2h-4v-2z"/></svg>`;
+  const typeIcon = typeHandler.getProjectIcon(typeCtx);
+  if (typeIcon) {
+    projectIconHtml = `${statusIndicator}${typeIcon}`;
   } else if (projectIcon) {
     projectIconHtml = `<span class="project-emoji-icon">${projectIcon}</span>`;
   } else {
@@ -270,7 +258,7 @@ function renderProjectHtml(project, depth) {
   const tooltipHtml = `<div class="project-tooltip">${tooltipLines.join('')}</div>`;
 
   return `
-    <div class="project-item ${isSelected ? 'active' : ''} ${isFivem ? 'fivem-project' : ''}"
+    <div class="project-item ${isSelected ? 'active' : ''} ${typeHandler.getProjectItemClass(typeCtx)}"
          data-project-id="${project.id}" data-depth="${depth}" draggable="true"
          style="margin-left: ${depth * 16}px;">
       ${tooltipHtml}
@@ -601,15 +589,17 @@ function attachListeners(list) {
     };
   });
 
-  // FiveM buttons
-  list.querySelectorAll('.btn-fivem-start').forEach(btn => {
-    btn.onclick = (e) => { e.stopPropagation(); if (callbacks.onStartFivem) callbacks.onStartFivem(getProjectIndex(btn.dataset.projectId)); };
-  });
-  list.querySelectorAll('.btn-fivem-stop').forEach(btn => {
-    btn.onclick = (e) => { e.stopPropagation(); if (callbacks.onStopFivem) callbacks.onStopFivem(getProjectIndex(btn.dataset.projectId)); };
-  });
-  list.querySelectorAll('.btn-fivem-console').forEach(btn => {
-    btn.onclick = (e) => { e.stopPropagation(); if (callbacks.onOpenFivemConsole) callbacks.onOpenFivemConsole(getProjectIndex(btn.dataset.projectId)); };
+  // Type-specific sidebar events (start/stop/console for each type)
+  // Merge callbacks with projectId->projectIndex wrappers for FiveM compatibility
+  const typeCallbacks = {
+    ...callbacks,
+    // FiveM passes projectId (string), convert to projectIndex
+    onStartFivem: (projectId) => { if (callbacks.onStartFivem) callbacks.onStartFivem(getProjectIndex(projectId)); },
+    onStopFivem: (projectId) => { if (callbacks.onStopFivem) callbacks.onStopFivem(getProjectIndex(projectId)); },
+    onOpenFivemConsole: (projectId) => { if (callbacks.onOpenFivemConsole) callbacks.onOpenFivemConsole(getProjectIndex(projectId)); }
+  };
+  registry.getAll().forEach(typeHandler => {
+    typeHandler.bindSidebarEvents(list, typeCallbacks);
   });
 
   // Git buttons

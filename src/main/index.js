@@ -46,7 +46,7 @@ function bootstrapApp() {
 
   // Set App User Model ID for Windows notifications
   if (process.platform === 'win32') {
-    app.setAppUserModelId('Claude Terminal');
+    app.setAppUserModelId('Anthropic.ClaudeTerminal');
   }
 
   // Handle second instance attempt - show existing window

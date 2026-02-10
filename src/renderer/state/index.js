@@ -8,6 +8,7 @@ const projectsState = require('./projects.state');
 const terminalsState = require('./terminals.state');
 const mcpState = require('./mcp.state');
 const fivemState = require('./fivem.state');
+const gitState = require('./git.state');
 const settingsState = require('./settings.state');
 const timeTrackingState = require('./timeTracking.state');
 
@@ -71,6 +72,7 @@ function getAppState() {
     terminals: terminalsState.terminalsState.get(),
     mcp: mcpState.mcpState.get(),
     fivem: fivemState.fivemState.get(),
+    git: gitState.gitState.get(),
     settings: settingsState.settingsState.get(),
     quickPicker: quickPickerState.get(),
     drag: dragState.get(),
@@ -96,6 +98,9 @@ module.exports = {
 
   // FiveM
   ...fivemState,
+
+  // Git
+  ...gitState,
 
   // Settings
   ...settingsState,

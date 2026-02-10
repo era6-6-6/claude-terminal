@@ -11,6 +11,7 @@ const FivemService = require('./FivemService');
 const DashboardService = require('./DashboardService');
 const SettingsService = require('./SettingsService');
 const TimeTrackingDashboard = require('./TimeTrackingDashboard');
+const GitTabService = require('./GitTabService');
 
 module.exports = {
   ProjectService,
@@ -21,5 +22,6 @@ module.exports = {
   FivemService,
   DashboardService,
   SettingsService,
-  TimeTrackingDashboard
+  TimeTrackingDashboard,
+  GitTabService
 };

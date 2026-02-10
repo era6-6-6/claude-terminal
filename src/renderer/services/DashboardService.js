@@ -10,6 +10,7 @@ const { projectsState, setGitPulling, setGitPushing, setGitMerging, setMergeInPr
 const { escapeHtml } = require('../utils');
 const { formatDuration } = require('../utils/format');
 const { t } = require('../i18n');
+const registry = require('../../project-types/registry');
 
 // ========== CACHE SYSTEM ==========
 const dashboardCache = new Map(); // projectId -> { data, timestamp, loading }
@@ -209,7 +210,7 @@ function loadAllDiskCaches() {
   }
 
   if (loaded > 0) {
-    console.log(`[Dashboard] Loaded ${loaded} project(s) from disk cache`);
+    // Disk cache loaded
     window.dispatchEvent(new CustomEvent('dashboard-preload-progress'));
   }
 }
@@ -343,13 +344,13 @@ async function getProjectStats(projectPath) {
  */
 async function getWorkflowRuns(remoteUrl) {
   if (!remoteUrl || !remoteUrl.includes('github.com')) {
-    console.log('[Dashboard] Not a GitHub repo:', remoteUrl);
+    // Not a GitHub repo
     return { runs: [], notGitHub: true };
   }
 
   try {
     const result = await api.github.workflowRuns(remoteUrl);
-    console.log('[Dashboard] Workflow runs result:', result);
+    // Workflow runs fetched
     return result;
   } catch (e) {
     console.error('[Dashboard] Error fetching workflow runs:', e);
@@ -393,15 +394,13 @@ async function loadDashboardData(projectPath) {
   // Fetch workflow runs and pull requests if it's a GitHub repo
   let workflowRuns = { runs: [] };
   let pullRequests = { pullRequests: [] };
-  console.log('[Dashboard] gitInfo.remoteUrl:', gitInfo.remoteUrl);
   if (gitInfo.isGitRepo && gitInfo.remoteUrl) {
-    console.log('[Dashboard] Fetching workflow runs and pull requests...');
     [workflowRuns, pullRequests] = await Promise.all([
       getWorkflowRuns(gitInfo.remoteUrl),
       getPullRequests(gitInfo.remoteUrl)
     ]);
   } else {
-    console.log('[Dashboard] Skipping GitHub data - not a git repo or no remote');
+    // No git remote, skip GitHub data
   }
 
   return { gitInfo, stats, workflowRuns, pullRequests, projectType };
@@ -949,7 +948,8 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
   } = options;
 
   const { gitInfo, stats, workflowRuns, pullRequests } = data;
-  const isFivem = project.type === 'fivem';
+  const typeHandler = registry.get(project.type);
+  const dashboardBadge = typeHandler.getDashboardBadge(project);
   const gitOps = getGitOperation(project.id);
   const hasMergeConflict = gitOps.mergeInProgress && gitOps.conflicts.length > 0;
   const projectTimes = getProjectTimes(project.id);
@@ -973,7 +973,7 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
     <div class="dashboard-project-header" data-animate="0">
       <div class="dashboard-project-title">
         <h2>${escapeHtml(project.name)}</h2>
-        <span class="dashboard-project-type ${isFivem ? 'fivem' : ''}">${isFivem ? t('dashboard.fivemServer') : t('dashboard.standalone')}</span>
+        <span class="dashboard-project-type ${dashboardBadge ? dashboardBadge.cssClass : ''}">${dashboardBadge ? dashboardBadge.text : t('dashboard.standalone')}</span>
       </div>
       <div class="dashboard-project-actions">
         <button class="btn-secondary" id="dash-btn-open-folder">
@@ -1014,12 +1014,7 @@ function renderDashboardHtml(container, project, data, options, isRefreshing = f
         <span class="time-sep">/</span>
         <span class="time-total">${formatDuration(projectTimes.total)}</span>
       </div>
-      ${isFivem ? `
-      <div class="quick-stat ${fivemStatus}">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16V4H3v12h18m0-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7v2h2v2H8v-2h2v-2H3a2 2 0 0 1-2-2V4c0-1.11.89-2 2-2h18"/></svg>
-        <span>${fivemStatus === 'running' ? t('fivem.online') : fivemStatus === 'starting' ? t('fivem.starting') : t('fivem.stopped')}</span>
-      </div>
-      ` : ''}
+      ${typeHandler.getDashboardStats({ fivemStatus })}
       ${gitInfo.isGitRepo && gitInfo.remoteUrl ? `
       <div class="quick-stat">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg>
@@ -1329,7 +1324,7 @@ async function preloadAllProjects() {
   const projects = projectsState.get().projects;
   if (!projects || projects.length === 0) return;
 
-  console.log(`[Dashboard] Preloading ${projects.length} projects...`);
+  // Preloading projects silently
 
   const PROJECT_TIMEOUT = 20000; // 20s max per project
 
@@ -1356,7 +1351,7 @@ async function preloadAllProjects() {
           project.name
         );
         setCacheData(project.id, data);
-        console.log(`[Dashboard] Preloaded: ${project.name}`);
+        // Preloaded
       } catch (e) {
         console.error(`[Dashboard] Failed to preload ${project.name}:`, e.message);
         // Store minimal data (project type) so it's not stuck as "no data"
@@ -1372,7 +1367,7 @@ async function preloadAllProjects() {
     window.dispatchEvent(new CustomEvent('dashboard-preload-progress'));
   }
 
-  console.log('[Dashboard] Preload complete');
+  // Preload complete
 }
 
 /**

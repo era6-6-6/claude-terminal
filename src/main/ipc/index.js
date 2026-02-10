@@ -8,6 +8,7 @@ const { registerGitHandlers } = require('./git.ipc');
 const { registerGitHubHandlers } = require('./github.ipc');
 const { registerMcpHandlers } = require('./mcp.ipc');
 const { registerFivemHandlers } = require('./fivem.ipc');
+const { registerWebAppHandlers } = require('../../project-types/webapp/main/webapp.ipc');
 const { registerDialogHandlers, setMainWindow: setDialogMainWindow } = require('./dialog.ipc');
 const { registerProjectHandlers } = require('./project.ipc');
 const { registerClaudeHandlers } = require('./claude.ipc');
@@ -27,6 +28,7 @@ function registerAllHandlers(mainWindow) {
   registerGitHubHandlers();
   registerMcpHandlers();
   registerFivemHandlers();
+  registerWebAppHandlers();
   registerDialogHandlers();
   registerProjectHandlers();
   registerClaudeHandlers();

@@ -1,0 +1,47 @@
+{
+  "fivem": {
+    "serverConsole": "Server console",
+    "stopServer": "Stop server",
+    "startServer": "Start server",
+    "stopped": "Stopped",
+    "starting": "Starting...",
+    "running": "Running",
+    "online": "Online",
+    "console": "Console",
+    "errors": "Errors",
+    "resources": "Resources",
+    "noErrors": "No errors detected",
+    "errorDetected": "Error detected",
+    "clearErrors": "Clear errors",
+    "debugWithClaude": "Debug with Claude",
+    "debugPrompt": "I have this FiveM/Lua error, help me fix it:\n\n",
+    "debugContext": "\nContext (previous logs):\n",
+    "scanning": "Scanning...",
+    "noResources": "No resources found",
+    "resourcesFound": "{count} resources",
+    "ensuredInCfg": "In server.cfg",
+    "notEnsured": "Not started",
+    "ensure": "Ensure",
+    "stop": "Stop",
+    "restart": "Restart",
+    "searchResources": "Search resources...",
+    "refreshResources": "Refresh",
+    "openFolder": "Open folder",
+    "setShortcut": "Set shortcut",
+    "removeShortcut": "Remove shortcut",
+    "pressKey": "Press a key...",
+    "quickEnsure": "Quick Ensure",
+    "noShortcut": "No shortcut"
+  },
+  "newProject": {
+    "types": {
+      "fivem": "FiveM Server",
+      "fivemDesc": "FiveM server with integrated console"
+    },
+    "launchScript": "Launch script",
+    "browse": "Browse"
+  },
+  "dashboard": {
+    "fivemServer": "FiveM Server"
+  }
+}

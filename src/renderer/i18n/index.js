@@ -155,6 +155,36 @@ function getLanguageName(code) {
   return locales[code]?.language?.name || code;
 }
 
+/**
+ * Deep merge translations into a locale
+ * @param {string} langCode - Language code (fr or en)
+ * @param {Object} newTranslations - Translations to merge (deep)
+ */
+function mergeTranslations(langCode, newTranslations) {
+  if (!locales[langCode]) return;
+
+  function deepMerge(target, source) {
+    for (const key of Object.keys(source)) {
+      if (source[key] && typeof source[key] === 'object' && !Array.isArray(source[key])) {
+        if (!target[key] || typeof target[key] !== 'object') {
+          target[key] = {};
+        }
+        deepMerge(target[key], source[key]);
+      } else {
+        target[key] = source[key];
+      }
+    }
+  }
+
+  deepMerge(locales[langCode], newTranslations);
+
+  // Refresh current translations if this is the active language
+  const currentLang = i18nState.get().currentLanguage;
+  if (currentLang === langCode) {
+    i18nState.setProp('translations', locales[langCode]);
+  }
+}
+
 module.exports = {
   initI18n,
   setLanguage,
@@ -164,6 +194,7 @@ module.exports = {
   getAvailableLanguages,
   getLanguageName,
   detectSystemLanguage,
+  mergeTranslations,
   SUPPORTED_LANGUAGES,
   DEFAULT_LANGUAGE,
   i18nState

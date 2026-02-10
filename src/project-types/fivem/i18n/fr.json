@@ -1,0 +1,47 @@
+{
+  "fivem": {
+    "serverConsole": "Console serveur",
+    "stopServer": "Arreter le serveur",
+    "startServer": "Demarrer le serveur",
+    "stopped": "Arrete",
+    "starting": "Demarrage...",
+    "running": "En cours",
+    "online": "En ligne",
+    "console": "Console",
+    "errors": "Erreurs",
+    "resources": "Resources",
+    "noErrors": "Aucune erreur detectee",
+    "errorDetected": "Erreur detectee",
+    "clearErrors": "Effacer les erreurs",
+    "debugWithClaude": "Debugger avec Claude",
+    "debugPrompt": "J'ai cette erreur FiveM/Lua, aide-moi a la resoudre :\n\n",
+    "debugContext": "\nContexte (logs precedents) :\n",
+    "scanning": "Scan en cours...",
+    "noResources": "Aucune resource trouvee",
+    "resourcesFound": "{count} resources",
+    "ensuredInCfg": "Dans server.cfg",
+    "notEnsured": "Non demarre",
+    "ensure": "Ensure",
+    "stop": "Stop",
+    "restart": "Restart",
+    "searchResources": "Rechercher une resource...",
+    "refreshResources": "Actualiser",
+    "openFolder": "Ouvrir le dossier",
+    "setShortcut": "Definir raccourci",
+    "removeShortcut": "Supprimer raccourci",
+    "pressKey": "Appuyez sur une touche...",
+    "quickEnsure": "Quick Ensure",
+    "noShortcut": "Aucun raccourci"
+  },
+  "newProject": {
+    "types": {
+      "fivem": "Serveur FiveM",
+      "fivemDesc": "Serveur FiveM avec console integree"
+    },
+    "launchScript": "Script de lancement",
+    "browse": "Parcourir"
+  },
+  "dashboard": {
+    "fivemServer": "Serveur FiveM"
+  }
+}

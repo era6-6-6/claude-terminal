@@ -33,10 +33,8 @@ function createQuickPickerWindow() {
     show: false,
     backgroundColor: '#00000000',
     webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-      sandbox: false, // Allow preload to use require() for Node.js modules
-      preload: path.join(__dirname, '..', 'preload.js')
+      nodeIntegration: true,
+      contextIsolation: false
     }
   });
 

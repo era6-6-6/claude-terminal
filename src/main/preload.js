@@ -108,7 +108,29 @@ contextBridge.exposeInMainWorld('electron_api', {
     commit: (params) => ipcRenderer.invoke('git-commit', params),
     generateCommitMessage: (params) => ipcRenderer.invoke('git-generate-commit-message', params),
     createBranch: (params) => ipcRenderer.invoke('git-create-branch', params),
-    deleteBranch: (params) => ipcRenderer.invoke('git-delete-branch', params)
+    deleteBranch: (params) => ipcRenderer.invoke('git-delete-branch', params),
+    commitHistory: (params) => ipcRenderer.invoke('git-commit-history', params),
+    fileDiff: (params) => ipcRenderer.invoke('git-file-diff', params),
+    commitDetail: (params) => ipcRenderer.invoke('git-commit-detail', params),
+    cherryPick: (params) => ipcRenderer.invoke('git-cherry-pick', params),
+    revert: (params) => ipcRenderer.invoke('git-revert', params),
+    unstageFiles: (params) => ipcRenderer.invoke('git-unstage-files', params),
+    stashApply: (params) => ipcRenderer.invoke('git-stash-apply', params),
+    stashDrop: (params) => ipcRenderer.invoke('git-stash-drop', params),
+    stashSave: (params) => ipcRenderer.invoke('git-stash-save', params)
+  },
+
+  // ==================== WEBAPP ====================
+  webapp: {
+    start: (params) => ipcRenderer.invoke('webapp-start', params),
+    stop: (params) => ipcRenderer.invoke('webapp-stop', params),
+    input: (params) => ipcRenderer.send('webapp-input', params),
+    resize: (params) => ipcRenderer.send('webapp-resize', params),
+    detectFramework: (params) => ipcRenderer.invoke('webapp-detect-framework', params),
+    getPort: (params) => ipcRenderer.invoke('webapp-get-port', params),
+    onData: createListener('webapp-data'),
+    onExit: createListener('webapp-exit'),
+    onPortDetected: createListener('webapp-port-detected')
   },
 
   // ==================== FIVEM ====================
@@ -171,7 +193,8 @@ contextBridge.exposeInMainWorld('electron_api', {
     setToken: (token) => ipcRenderer.invoke('github-set-token', token),
     getToken: () => ipcRenderer.invoke('github-get-token'),
     workflowRuns: (remoteUrl) => ipcRenderer.invoke('github-workflow-runs', { remoteUrl }),
-    pullRequests: (remoteUrl) => ipcRenderer.invoke('github-pull-requests', { remoteUrl })
+    pullRequests: (remoteUrl) => ipcRenderer.invoke('github-pull-requests', { remoteUrl }),
+    createPR: (params) => ipcRenderer.invoke('github-create-pr', params)
   },
 
   // ==================== PROJECT ====================

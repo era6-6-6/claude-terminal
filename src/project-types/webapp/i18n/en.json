@@ -1,0 +1,39 @@
+{
+  "webapp": {
+    "devServer": "Dev server",
+    "startServer": "Start dev server",
+    "stopServer": "Stop dev server",
+    "openBrowser": "Open in browser",
+    "stopped": "Stopped",
+    "starting": "Starting...",
+    "running": "Running",
+    "online": "Online",
+    "console": "Console",
+    "serverInfo": "Info",
+    "framework": "Framework",
+    "port": "Port",
+    "url": "URL",
+    "devCommand": "Dev command",
+    "packageManager": "Package manager",
+    "noPortDetected": "No port detected yet",
+    "detecting": "Detecting...",
+    "serverRunningAt": "Server running at {url}",
+    "reload": "Reload",
+    "preview": "Preview",
+    "settings": {
+      "previewEnabled": "In-app Preview",
+      "previewEnabledDesc": "Embed a live preview of the dev server directly in the app (uses more memory)"
+    }
+  },
+  "newProject": {
+    "types": {
+      "webapp": "Web App",
+      "webappDesc": "Web project with integrated dev server"
+    },
+    "devCommand": "Dev command",
+    "devCommandPlaceholder": "npm run dev"
+  },
+  "dashboard": {
+    "webApp": "Web App"
+  }
+}

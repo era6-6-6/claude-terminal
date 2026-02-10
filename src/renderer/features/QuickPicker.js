@@ -6,6 +6,7 @@
 const { escapeHtml } = require('../utils/dom');
 const { projectsState } = require('../state');
 const { t } = require('../i18n');
+const registry = require('../../project-types/registry');
 
 const quickPickerState = {
   isOpen: false,
@@ -104,10 +105,7 @@ function renderQuickPickerList(list, onSelect, picker) {
   list.innerHTML = quickPickerState.filteredProjects.map((project, index) => `
     <div class="quick-picker-item ${index === quickPickerState.selectedIndex ? 'selected' : ''}" data-index="${index}">
       <div class="quick-picker-item-icon">
-        ${project.type === 'fivem' ?
-          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 16V4H3v12h18m0-14a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-7v2h2v2H8v-2h2v-2H3a2 2 0 0 1-2-2V4c0-1.11.89-2 2-2h18"/></svg>' :
-          '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>'
-        }
+        ${registry.get(project.type).icon || '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg>'}
       </div>
       <div class="quick-picker-item-content">
         <div class="quick-picker-item-name">${escapeHtml(project.name)}</div>
