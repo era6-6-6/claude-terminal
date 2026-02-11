@@ -14,6 +14,7 @@ contextBridge.exposeInMainWorld('electron_nodeModules', {
     join: (...args) => path.join(...args),
     dirname: (p) => path.dirname(p),
     basename: (p, ext) => path.basename(p, ext),
+    relative: (from, to) => path.relative(from, to),
     resolve: (...args) => path.resolve(...args),
     sep: path.sep
   },
@@ -195,6 +196,13 @@ contextBridge.exposeInMainWorld('electron_api', {
     workflowRuns: (remoteUrl) => ipcRenderer.invoke('github-workflow-runs', { remoteUrl }),
     pullRequests: (remoteUrl) => ipcRenderer.invoke('github-pull-requests', { remoteUrl }),
     createPR: (params) => ipcRenderer.invoke('github-create-pr', params)
+  },
+
+  // ==================== MCP REGISTRY ====================
+  mcpRegistry: {
+    browse: (limit, cursor) => ipcRenderer.invoke('mcp-registry-browse', { limit, cursor }),
+    search: (query, limit) => ipcRenderer.invoke('mcp-registry-search', { query, limit }),
+    detail: (name) => ipcRenderer.invoke('mcp-registry-detail', { name }),
   },
 
   // ==================== MARKETPLACE ====================

@@ -14,6 +14,7 @@ const { registerProjectHandlers } = require('./project.ipc');
 const { registerClaudeHandlers } = require('./claude.ipc');
 const { registerUsageHandlers } = require('./usage.ipc');
 const { registerMarketplaceHandlers } = require('./marketplace.ipc');
+const { registerMcpRegistryHandlers } = require('./mcpRegistry.ipc');
 
 /**
  * Register all IPC handlers
@@ -35,6 +36,7 @@ function registerAllHandlers(mainWindow) {
   registerClaudeHandlers();
   registerUsageHandlers();
   registerMarketplaceHandlers();
+  registerMcpRegistryHandlers();
 }
 
 module.exports = {
