@@ -18,6 +18,7 @@ module.exports = {
     "dist/renderer.bundle.js",
     "dist/renderer.bundle.js.map",
     "src/main/**/*",
+    "src/project-types/**/*",
     "assets/**/*",
     "package.json"
   ],
