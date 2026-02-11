@@ -87,7 +87,11 @@
     "newFolderPrompt": "Nom du dossier :",
     "renamePrompt": "Nouveau nom :",
     "deleteFileConfirm": "Supprimer le fichier ?",
-    "deleteFolderConfirm": "Supprimer le dossier et tout son contenu ?"
+    "deleteFolderConfirm": "Supprimer le dossier et tout son contenu ?",
+    "searchPlaceholder": "Rechercher...",
+    "noResults": "Aucun resultat",
+    "deleteMultipleConfirm": "Supprimer {count} elements ?",
+    "selectedItems": "elements selectionnes"
   },
   "quickActions": {
     "title": "Quick Actions",
@@ -523,6 +527,35 @@
     "noReadme": "Aucune description disponible",
     "readmeError": "Impossible de charger la description",
     "searchHint": "Tapez pour rechercher des skills sur skills.sh"
+  },
+  "mcpRegistry": {
+    "myServers": "Mes Serveurs",
+    "registry": "Registry",
+    "searchPlaceholder": "Rechercher des serveurs MCP...",
+    "available": "Disponibles",
+    "searchResults": "Resultats de recherche",
+    "noResults": "Aucun serveur MCP trouve",
+    "searchHint": "Tapez pour rechercher dans le MCP Registry",
+    "install": "Installer",
+    "installing": "Installation...",
+    "installed": "Installe",
+    "details": "Details",
+    "cannotInstall": "Impossible d'installer ce serveur automatiquement",
+    "configureServer": "Configurer le serveur",
+    "envFormDescription": "Ce serveur necessite une configuration avant l'installation :",
+    "environmentVariables": "Variables d'environnement",
+    "arguments": "Arguments",
+    "installSuccess": "Serveur MCP \"{name}\" installe avec succes",
+    "installError": "Echec de l'installation du serveur MCP",
+    "version": "Version",
+    "repository": "Repository",
+    "packages": "Packages",
+    "remotes": "Remotes",
+    "noDescription": "Aucune description disponible",
+    "viewOnGithub": "Voir sur GitHub",
+    "requiredField": "Requis",
+    "optionalField": "Optionnel",
+    "serverType": "Type"
   },
   "errors": {
     "corruptedFile": "Fichier projets corrompu",

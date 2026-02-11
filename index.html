@@ -212,6 +212,13 @@
                 </button>
               </div>
             </div>
+            <div class="fe-search-container" id="fe-search-container" style="display: none;">
+              <svg class="fe-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" id="fe-search-input" class="fe-search-input" data-i18n-placeholder="fileExplorer.searchPlaceholder" placeholder="Search files...">
+              <button class="fe-search-clear" id="fe-search-clear" title="Clear" style="display: none;">
+                <svg viewBox="0 0 12 12"><path d="M1 1l10 10M11 1L1 11" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>
+              </button>
+            </div>
             <div class="file-explorer-tree" id="file-explorer-tree"></div>
             <div class="panel-resizer" id="file-explorer-resizer"></div>
           </div>
@@ -510,7 +517,19 @@
         <div class="mcp-layout">
           <div class="mcp-main">
             <div class="list-header">
-              <h2 data-i18n="ui.mcpServers">Serveurs MCP</h2>
+              <div class="mcp-header-left">
+                <h2 data-i18n="ui.mcpServers">Serveurs MCP</h2>
+                <div class="mcp-sub-tabs">
+                  <button class="mcp-sub-tab active" data-subtab="local" data-i18n="mcpRegistry.myServers">My Servers</button>
+                  <button class="mcp-sub-tab" data-subtab="registry" data-i18n="mcpRegistry.registry">Registry</button>
+                </div>
+              </div>
+              <div class="mcp-header-right">
+                <div class="mcp-search-container" id="mcp-registry-search" style="display:none">
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16"><path d="M15.5 14h-.79l-.28-.27A6.47 6.47 0 0016 9.5 6.5 6.5 0 109.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+                  <input type="text" id="mcp-registry-search-input" data-i18n-placeholder="mcpRegistry.searchPlaceholder" placeholder="Search MCP servers...">
+                </div>
+              </div>
             </div>
             <div class="mcp-list" id="mcp-list"></div>
           </div>

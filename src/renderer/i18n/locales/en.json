@@ -366,7 +366,11 @@
     "newFolderPrompt": "Folder name:",
     "renamePrompt": "New name:",
     "deleteFileConfirm": "Delete file?",
-    "deleteFolderConfirm": "Delete folder and all contents?"
+    "deleteFolderConfirm": "Delete folder and all contents?",
+    "searchPlaceholder": "Search files...",
+    "noResults": "No results",
+    "deleteMultipleConfirm": "Delete {count} items?",
+    "selectedItems": "items selected"
   },
   "quickActions": {
     "title": "Quick Actions",
@@ -523,6 +527,35 @@
     "noReadme": "No description available",
     "readmeError": "Could not load description",
     "searchHint": "Type to search for skills on skills.sh"
+  },
+  "mcpRegistry": {
+    "myServers": "My Servers",
+    "registry": "Registry",
+    "searchPlaceholder": "Search MCP servers...",
+    "available": "Available",
+    "searchResults": "Search results",
+    "noResults": "No MCP servers found",
+    "searchHint": "Type to search the MCP Registry",
+    "install": "Install",
+    "installing": "Installing...",
+    "installed": "Installed",
+    "details": "Details",
+    "cannotInstall": "Cannot install this server automatically",
+    "configureServer": "Configure Server",
+    "envFormDescription": "This server requires configuration before installation:",
+    "environmentVariables": "Environment Variables",
+    "arguments": "Arguments",
+    "installSuccess": "MCP server \"{name}\" installed successfully",
+    "installError": "Failed to install MCP server",
+    "version": "Version",
+    "repository": "Repository",
+    "packages": "Packages",
+    "remotes": "Remotes",
+    "noDescription": "No description available",
+    "viewOnGithub": "View on GitHub",
+    "requiredField": "Required",
+    "optionalField": "Optional",
+    "serverType": "Type"
   },
   "errors": {
     "corruptedFile": "Projects file corrupted",
