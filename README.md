@@ -3,14 +3,17 @@
 </p>
 
 <p align="center">
+  <img src="https://img.shields.io/badge/version-0.7.2-orange" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-blue" alt="Windows" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-green" alt="License" />
   <img src="https://img.shields.io/badge/electron-28-purple" alt="Electron" />
 </p>
 
 <p align="center">
-  A Windows desktop application for managing <a href="https://github.com/anthropics/claude-code">Claude Code</a> projects with an integrated terminal environment, git workflows, time tracking, and more.
+  A Windows desktop application for managing <a href="https://github.com/anthropics/claude-code">Claude Code</a> projects with an integrated terminal environment, git workflows, plugin management, and more.
 </p>
+
+---
 
 ## Features
 
@@ -19,37 +22,68 @@
 - GPU-accelerated rendering via xterm.js + WebGL (DOM fallback)
 - Tab drag-and-drop reordering, renaming, desktop notifications
 - Filter terminals by project
+- Adaptive ready detection with spinner status
 
 ### Project Management
 - Organize projects in nested folders with drag-and-drop
 - Customize each project with colors and emoji icons
 - Quick Actions toolbar: configurable one-click commands per project (build, test, deploy, custom scripts...)
-- Built-in file explorer with tree view
+- Built-in file explorer with tree view, multi-select, search, git status indicators, and inline rename
+- Modular project type system (standard, FiveM, webapp)
 
 ### Git Integration
-- Branch switching, creation and deletion from the toolbar
-- Pull, push, merge with conflict detection
-- Changes panel: view staged/unstaged/untracked files, stage and commit
-- Auto-generate commit messages using Claude
-- Stash list in dashboard
+- **Branches**: switch, create, delete from the toolbar
+- **Sync**: pull (rebase), push, merge with conflict detection and resolution
+- **Changes panel**: view staged/unstaged/untracked files, stage/unstage and commit
+- **Commit history**: browse commits, view diffs, cherry-pick and revert
+- **Stash management**: save, apply, drop stashes
+- **AI commit messages**: auto-generate conventional commit messages using Claude
+- **Pull Requests**: create PRs directly from the app
+
+### GitHub Integration
+- OAuth Device Flow authentication (secure, no token copy-paste)
+- View CI/CD workflow runs per repository
+- View and create pull requests
+- Token stored securely in Windows Credential Manager via keytar
 
 ### Dashboard
 - Per-project overview: current branch, commits ahead/behind, recent commits, contributors
 - Code statistics: lines of code by language, file count, commit count
 - Active terminals count
+- Claude API usage monitoring with auto-refresh
 
 ### Time Tracking
 - Automatic session detection per project (15-min idle timeout, sleep/wake detection)
 - View by period: today, this week, this month, custom range
 - Stats: daily average, longest streak, evolution charts, recent sessions
+- Midnight rollover and periodic checkpoints
+
+### Plugins
+- Browse and discover plugins from configured marketplaces
+- Install plugins directly from the app (via Claude CLI)
+- Add community marketplaces by GitHub URL
+- Category filtering and search
+- View plugin details and README
+
+### Skill Marketplace
+- Search and browse available skills
+- One-click install and uninstall
+- View skill README and details
+- Local cache for fast browsing
 
 ### Skills & Agents
 - Browse and manage Claude Code skills and agents
 - View SKILL.md and agent configuration files
+- Load skills from `~/.claude/skills`, plugins, and bundled resources
 
 ### MCP Servers
 - Configure, start and stop MCP servers
 - Environment variable configuration
+- **MCP Registry**: browse and search the public MCP server registry
+
+### Sessions
+- View Claude Code sessions per project
+- Browse session history with timestamps and metadata
 
 ### Memory
 - Edit global, settings and project-specific CLAUDE.md files
@@ -62,13 +96,18 @@
 - Customizable keyboard shortcuts
 - Desktop notification preferences
 - Close behavior (ask, minimize to tray, or quit)
+- Launch at startup toggle
 
 ### Other
 - System tray integration with accent-colored icon
 - Global shortcuts (`Ctrl+Shift+P` quick picker, `Ctrl+Shift+T` new terminal)
 - Auto-updates via GitHub releases
 - Single instance lock
-- FiveM server management (launch, integrated console)
+- Custom NSIS installer with branded images
+- FiveM server management (launch, integrated console, resource scanning)
+- Web app management with framework auto-detection
+
+---
 
 ## Prerequisites
 
@@ -77,6 +116,10 @@
 - Windows 10 or 11
 
 ## Installation
+
+Download the latest installer from [Releases](https://github.com/Sterll/claude-terminal/releases).
+
+Or build from source:
 
 ```bash
 git clone https://github.com/Sterll/claude-terminal.git
@@ -92,6 +135,9 @@ npm start
 
 # Run with DevTools open
 npm run start:dev
+
+# Build renderer in watch mode
+npm run watch
 ```
 
 ## Building
@@ -99,9 +145,14 @@ npm run start:dev
 ```bash
 # Build Windows installer (NSIS)
 npm run build
+
+# Build and publish to GitHub releases
+npm run publish
 ```
 
 The installer will be generated in the `build/` directory.
+
+---
 
 ## Keyboard Shortcuts
 
@@ -119,35 +170,66 @@ The installer will be generated in the `build/` directory.
 
 Shortcuts are customizable in Settings.
 
-## Project Structure
+---
+
+## Architecture
 
 ```
 claude-terminal/
 ├── main.js                  # Electron entry point
 ├── renderer.js              # Main renderer logic
 ├── index.html               # Main window UI
-├── styles.css               # Application styles
+├── styles.css               # Application styles (~6000 lines)
 ├── src/
 │   ├── main/                # Main process
 │   │   ├── index.js         # Bootstrap & lifecycle
 │   │   ├── preload.js       # Context bridge API
-│   │   ├── ipc/             # IPC handlers (terminal, git, mcp, dialog, fivem, project)
-│   │   ├── services/        # Terminal, MCP, Updates, FiveM services
-│   │   ├── windows/         # MainWindow, QuickPicker, TrayManager
-│   │   └── utils/           # Paths, git utilities
+│   │   ├── ipc/             # IPC handlers
+│   │   │   ├── terminal.ipc.js
+│   │   │   ├── git.ipc.js
+│   │   │   ├── github.ipc.js
+│   │   │   ├── claude.ipc.js
+│   │   │   ├── usage.ipc.js
+│   │   │   ├── mcp.ipc.js
+│   │   │   ├── plugin.ipc.js
+│   │   │   ├── fivem.ipc.js
+│   │   │   ├── project.ipc.js
+│   │   │   └── dialog.ipc.js
+│   │   ├── services/
+│   │   │   ├── TerminalService.js
+│   │   │   ├── PluginService.js
+│   │   │   ├── GitHubAuthService.js
+│   │   │   ├── UsageService.js
+│   │   │   ├── McpService.js
+│   │   │   ├── UpdaterService.js
+│   │   │   └── FivemService.js
+│   │   ├── windows/
+│   │   │   ├── MainWindow.js
+│   │   │   ├── QuickPickerWindow.js
+│   │   │   └── TrayManager.js
+│   │   └── utils/
 │   └── renderer/            # Renderer process
 │       ├── services/        # IPC wrappers
-│       ├── state/           # Reactive state management (observable pattern)
-│       ├── ui/components/   # UI components (ProjectList, TerminalManager, Modal...)
+│       ├── state/           # Reactive state (observable pattern)
+│       ├── ui/components/   # ProjectList, TerminalManager, Modal, Toast, FileExplorer...
 │       ├── features/        # QuickPicker, KeyboardShortcuts, DragDrop
 │       ├── i18n/            # Translations (en, fr)
-│       └── utils/           # DOM, color, format, paths helpers
-└── assets/                  # Icons and resources
+│       └── utils/           # DOM, color, format, paths, syntax highlighting
+├── scripts/
+│   └── build-renderer.js    # esbuild bundler
+└── resources/
+    └── bundled-skills/      # Built-in skills
 ```
+
+---
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
+
+## Security
+
+See [SECURITY.md](SECURITY.md) for reporting vulnerabilities.
 
 ## License
 
