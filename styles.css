@@ -18788,6 +18788,15 @@ select:focus-visible {
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
+.chat-todo.collapsing {
+  animation: td-slide-out 0.3s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+@keyframes td-slide-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to   { opacity: 0; transform: translateY(12px) scale(0.95); }
+}
+
 /* ── Collapsed bar (always visible) ── */
 .td-bar {
   display: flex;

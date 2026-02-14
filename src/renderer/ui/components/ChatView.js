@@ -150,6 +150,7 @@ function createChatView(wrapperEl, project, options = {}) {
   let currentMsgHasToolUse = false;
   let turnHadAssistantContent = false; // tracks if current turn displayed any streamed/assistant content
   let todoWidgetEl = null; // persistent todo list widget
+  let todoAllDone = false; // tracks if all todos are completed
   let slashCommands = []; // populated from system/init message
   let slashSelectedIndex = -1; // currently highlighted item in slash dropdown
   const unsubscribers = [];
@@ -506,6 +507,15 @@ function createChatView(wrapperEl, project, options = {}) {
     // Snapshot images and clear pending
     const images = hasImages ? pendingImages.splice(0) : [];
     renderImagePreview();
+
+    // Remove completed todo widget on new prompt
+    if (todoWidgetEl && todoAllDone) {
+      todoWidgetEl.classList.add('collapsing');
+      const el = todoWidgetEl;
+      todoWidgetEl = null;
+      todoAllDone = false;
+      setTimeout(() => el.remove(), 300);
+    }
 
     appendUserMessage(text, images);
     inputEl.value = '';
@@ -1203,6 +1213,7 @@ function createChatView(wrapperEl, project, options = {}) {
     const total = todos.length;
     const pct = Math.round((completed / total) * 100);
     const allDone = completed === total;
+    todoAllDone = allDone;
 
     // Build items HTML
     const itemsHtml = todos.map((todo, i) => {
