@@ -25,9 +25,24 @@
 
 ## Features
 
+### Chat UI (Claude Agent SDK)
+- Built-in chat interface powered by the Claude Agent SDK with streaming responses
+- Real-time markdown rendering: code blocks, tables, lists, headers, links
+- **Permission cards**: Allow, Always Allow, or Deny tool use requests
+- **Plan mode**: review and approve/reject agent plans before execution
+- **Thinking blocks**: expandable sections showing Claude's reasoning
+- **Tool cards**: collapsible cards showing tool execution with formatted details
+- **Subagent visualization**: nested task tracking for spawned agents
+- **Todo widget**: persistent task list above the input, auto-dismisses on completion
+- **Image attachments**: paste, drag-drop, or pick PNG/JPEG/GIF/WebP images (up to 20MB)
+- **Slash commands**: auto-completing commands (/compact, /clear, /help, custom skills)
+- **Cost tracking**: model name, token count, and USD cost in the status bar
+- Interrupt streaming mid-turn, auto-generated tab names via haiku model
+
 ### Terminals
 - Multiple Claude Code terminals per project with tabbed interface
 - GPU-accelerated rendering via xterm.js + WebGL (DOM fallback)
+- Switch between terminal and chat mode per tab
 - Tab drag-and-drop reordering, renaming, desktop notifications
 - Filter terminals by project
 - Adaptive ready detection with spinner status
@@ -41,14 +56,14 @@
 - Per-project settings modal
 
 ### Git Integration
-- **Branches**: switch, create, delete from the toolbar
+- **Branches**: switch, create, delete with tree view of local/remote branches
 - **Sync**: pull (rebase), push, merge with conflict detection and resolution
 - **Changes panel**: view staged/unstaged/untracked files, stage/unstage and commit
-- **Commit history**: browse commits, view diffs, cherry-pick and revert
+- **Commit history**: IntelliJ-style commit graph with SVG rendering, branch/author filtering, infinite scroll
+- **Cherry-pick & revert**: advanced commit operations from history
 - **Stash management**: save, apply, drop stashes
 - **AI commit messages**: auto-generate conventional commit messages via GitHub Models API
-- **Commit history**: branch/author filters and commit graph visualization
-- **Pull Requests**: create PRs directly from the app
+- **Pull Requests**: create and view PRs directly from the app
 
 ### GitHub Integration
 - OAuth Device Flow authentication (secure, no token copy-paste)
@@ -64,9 +79,17 @@
 
 ### Time Tracking
 - Automatic session detection per project (15-min idle timeout, sleep/wake detection)
+- Separate lightweight storage (`timetracking.json`) with monthly archives
 - View by period: today, this week, this month, custom range
 - Stats: daily average, longest streak, evolution charts, recent sessions
 - Midnight rollover and periodic checkpoints
+
+### Hooks
+- Integrates with Claude Code CLI hooks for real-time activity tracking
+- One-click install into `~/.claude/settings.json` (non-destructive, preserves user hooks)
+- 15 hook types: PreToolUse, PostToolUse, Notification, SessionStart, Stop, and more
+- Event bus with normalized events for session, tool, and subagent tracking
+- Fallback terminal scraping when hooks are unavailable
 
 ### Plugins
 - Browse and discover plugins from configured marketplaces
@@ -107,9 +130,12 @@
 - Desktop notification preferences
 - Close behavior (ask, minimize to tray, or quit)
 - Launch at startup toggle
+- Auto-updates with background download and install banner
 
 ### Other
+- First-launch setup wizard with optional hooks installation
 - System tray integration with accent-colored icon
+- Custom toast notifications with stacking, click-through transparency, and action buttons
 - Global shortcuts (`Ctrl+Shift+P` quick picker, `Ctrl+Shift+T` new terminal)
 - Single instance lock
 - Custom NSIS installer with branded images
@@ -117,7 +143,6 @@
 - Web app management with framework auto-detection
 - Python project detection (version, venv, dependencies, entry point)
 - API project type with integrated route tester, variables, and console
-- Custom BrowserWindow notifications (replaces native OS notifications)
 
 ---
 
@@ -189,6 +214,7 @@ claude-terminal/
 ├── main.js                    # Electron entry point
 ├── renderer.js                # Main renderer logic (bundled to dist/)
 ├── index.html                 # Main window UI
+├── notification.html          # Custom toast notification window
 ├── quick-picker.html          # Quick picker window
 ├── setup-wizard.html          # First-launch wizard
 ├── styles.css                 # Application styles (~6000 lines)
@@ -200,6 +226,7 @@ claude-terminal/
 │   │   │   ├── terminal.ipc.js
 │   │   │   ├── git.ipc.js
 │   │   │   ├── github.ipc.js
+│   │   │   ├── chat.ipc.js       # Chat UI / Agent SDK handlers
 │   │   │   ├── claude.ipc.js
 │   │   │   ├── usage.ipc.js
 │   │   │   ├── mcp.ipc.js
@@ -210,15 +237,19 @@ claude-terminal/
 │   │   │   └── dialog.ipc.js
 │   │   ├── services/
 │   │   │   ├── TerminalService.js
+│   │   │   ├── ChatService.js        # Claude Agent SDK wrapper
 │   │   │   ├── PluginService.js
 │   │   │   ├── MarketplaceService.js
 │   │   │   ├── GitHubAuthService.js
 │   │   │   ├── UsageService.js
 │   │   │   ├── McpService.js
 │   │   │   ├── McpRegistryService.js
+│   │   │   ├── HookEventServer.js    # HTTP server for hook events
+│   │   │   ├── FivemService.js
 │   │   │   └── UpdaterService.js
 │   │   ├── windows/
 │   │   │   ├── MainWindow.js
+│   │   │   ├── NotificationWindow.js  # Custom toast notifications
 │   │   │   ├── QuickPickerWindow.js
 │   │   │   ├── SetupWizardWindow.js
 │   │   │   └── TrayManager.js
@@ -234,6 +265,7 @@ claude-terminal/
 │   │   │   ├── DashboardService.js
 │   │   │   ├── GitTabService.js
 │   │   │   ├── TimeTrackingDashboard.js
+│   │   │   ├── ArchiveService.js      # Monthly time-tracking archives
 │   │   │   ├── SkillService.js
 │   │   │   ├── AgentService.js
 │   │   │   └── McpService.js
@@ -249,6 +281,7 @@ claude-terminal/
 │   │   │   ├── components/
 │   │   │   │   ├── ProjectList.js
 │   │   │   │   ├── TerminalManager.js
+│   │   │   │   ├── ChatView.js        # Chat UI component
 │   │   │   │   ├── FileExplorer.js
 │   │   │   │   ├── Modal.js
 │   │   │   │   ├── Toast.js
@@ -262,6 +295,10 @@ claude-terminal/
 │   │   │   ├── QuickPicker.js
 │   │   │   ├── KeyboardShortcuts.js
 │   │   │   └── DragDrop.js
+│   │   ├── events/
+│   │   │   ├── ClaudeEventBus.js      # Unified event system
+│   │   │   ├── HooksProvider.js       # Hook events normalization
+│   │   │   └── ScrapingProvider.js    # Fallback terminal scraping
 │   │   ├── i18n/
 │   │   │   └── locales/
 │   │   │       ├── en.json
