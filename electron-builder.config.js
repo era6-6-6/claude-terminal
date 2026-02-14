@@ -21,8 +21,20 @@ module.exports = {
     "src/main/**/*",
     "src/project-types/**/*",
     "assets/**/*",
-    "resources/**/*",
+    "resources/bundled-skills/**/*",
     "package.json"
+  ],
+  asarUnpack: [
+    "node_modules/@anthropic-ai/claude-agent-sdk/**/*",
+    "node_modules/node-pty/**/*",
+    "node_modules/keytar/**/*"
+  ],
+  extraResources: [
+    {
+      from: "resources/hooks",
+      to: "hooks",
+      filter: ["**/*"]
+    }
   ],
   win: {
     target: [

@@ -14,8 +14,11 @@ const CLAUDE_SETTINGS_BACKUP_PATH = path.join(os.homedir(), '.claude', 'settings
 // Identifier used to detect our hooks in the config
 const HOOK_IDENTIFIER = 'claude-terminal-hook-handler';
 
-// Path to the bundled hook handler script
+// Path to the bundled hook handler script (extraResources puts it alongside app.asar)
 function getHandlerPath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, 'hooks', 'claude-terminal-hook-handler.js');
+  }
   return path.join(app.getAppPath(), 'resources', 'hooks', 'claude-terminal-hook-handler.js');
 }
 

@@ -4,6 +4,9 @@
  * Handles permissions via canUseTool callback, forwarding to renderer.
  */
 
+const path = require('path');
+const { app } = require('electron');
+
 let sdkPromise = null;
 
 async function loadSDK() {
@@ -11,6 +14,18 @@ async function loadSDK() {
     sdkPromise = import('@anthropic-ai/claude-agent-sdk');
   }
   return sdkPromise;
+}
+
+/**
+ * Resolve the path to the SDK's cli.js.
+ * In packaged mode, asarUnpack puts it outside the asar at app.asar.unpacked/
+ */
+function getSdkCliPath() {
+  const sdkRelative = path.join('node_modules', '@anthropic-ai', 'claude-agent-sdk', 'cli.js');
+  if (app.isPackaged) {
+    return path.join(app.getAppPath().replace('app.asar', 'app.asar.unpacked'), sdkRelative);
+  }
+  return path.join(app.getAppPath(), sdkRelative);
 }
 
 /**
@@ -131,12 +146,13 @@ class ChatService {
         maxTurns: 100,
         includePartialMessages: true,
         permissionMode,
+        pathToClaudeCodeExecutable: getSdkCliPath(),
         systemPrompt: { type: 'preset', preset: 'claude_code' },
         settingSources: ['user', 'project', 'local'],
         canUseTool: async (toolName, input, opts) => {
           return this._handlePermission(sessionId, toolName, input, opts);
         },
-        stderr: () => {}
+        stderr: (data) => { console.error(`[ChatService][stderr] ${data}`); }
       };
 
       // Resume existing session if requested
@@ -298,6 +314,7 @@ class ChatService {
           maxTurns: 1,
           allowedTools: [],
           model: 'haiku',
+          pathToClaudeCodeExecutable: getSdkCliPath(),
           systemPrompt: 'You generate very short tab titles (2-4 words, no quotes, no punctuation). Reply in the SAME language as the user message. Only output the title, nothing else.'
         }
       });
