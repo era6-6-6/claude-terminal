@@ -1,6 +1,6 @@
 {
   "name": "claude-terminal",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Terminal custom pour Claude Code avec gestion des projets, skills et agents",
   "main": "main.js",
   "scripts": {
@@ -33,7 +33,6 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
-    "@anthropic-ai/claude-agent-sdk": "^0.2.42",
     "dotenv-cli": "^11.0.0",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
