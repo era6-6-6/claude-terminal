@@ -115,7 +115,7 @@ class ChatService {
    * @param {string} [params.resumeSessionId] - Session ID to resume
    * @returns {Promise<string>} Session ID
    */
-  async startSession({ cwd, prompt, permissionMode = 'default', resumeSessionId = null, sessionId = null }) {
+  async startSession({ cwd, prompt, permissionMode = 'default', resumeSessionId = null, sessionId = null, images = [] }) {
     const sdk = await loadSDK();
     if (!sessionId) sessionId = `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
@@ -127,7 +127,7 @@ class ChatService {
     if (prompt) {
       messageQueue.push({
         type: 'user',
-        message: { role: 'user', content: prompt },
+        message: { role: 'user', content: this._buildContent(prompt, images) },
         parent_tool_use_id: null,
         session_id: sessionId
       });
@@ -187,16 +187,42 @@ class ChatService {
   /**
    * Send a follow-up message (push to async iterable queue)
    */
-  sendMessage(sessionId, text) {
+  sendMessage(sessionId, text, images = []) {
     const session = this.sessions.get(sessionId);
     if (!session) throw new Error(`Session ${sessionId} not found`);
 
     session.messageQueue.push({
       type: 'user',
-      message: { role: 'user', content: text },
+      message: { role: 'user', content: this._buildContent(text, images) },
       parent_tool_use_id: null,
       session_id: sessionId
     });
+  }
+
+  /**
+   * Build message content: plain string if text-only, content blocks array if images attached
+   * @param {string} text
+   * @param {Array} images - Array of { base64, mediaType } objects
+   * @returns {string|Array}
+   */
+  _buildContent(text, images) {
+    if (!images || images.length === 0) return text;
+
+    const content = [];
+    if (text) {
+      content.push({ type: 'text', text });
+    }
+    for (const img of images) {
+      content.push({
+        type: 'image',
+        source: {
+          type: 'base64',
+          media_type: img.mediaType,
+          data: img.base64
+        }
+      });
+    }
+    return content;
   }
 
   /**

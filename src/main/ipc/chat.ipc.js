@@ -19,9 +19,9 @@ function registerChatHandlers() {
   });
 
   // Send a follow-up message to existing session
-  ipcMain.handle('chat-send', async (_event, { sessionId, text }) => {
+  ipcMain.handle('chat-send', async (_event, { sessionId, text, images }) => {
     try {
-      chatService.sendMessage(sessionId, text);
+      chatService.sendMessage(sessionId, text, images);
       return { success: true };
     } catch (err) {
       console.error('[chat-send] Error:', err.message);

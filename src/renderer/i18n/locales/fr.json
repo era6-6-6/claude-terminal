@@ -680,7 +680,8 @@
     "compactedSimple": "Conversation compactée",
     "slashCompact": "Compacter l'historique",
     "slashClear": "Effacer la conversation",
-    "slashHelp": "Afficher l'aide"
+    "slashHelp": "Afficher l'aide",
+    "attachImage": "Joindre une image"
   },
   "hooks": {
     "consent": {

@@ -13,15 +13,62 @@ const { recordActivity, recordOutputActivity } = require('../../state');
 
 function renderMarkdown(text) {
   if (!text) return '';
-  let html = escapeHtml(text);
 
-  // Code blocks with syntax highlighting
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
-    const decoded = unescapeHtml(code.trim());
+  // Extract code blocks first to protect them from other transformations
+  const codeBlocks = [];
+  let processed = text.replace(/```(\w*)\n([\s\S]*?)```/g, (_, lang, code) => {
+    const decoded = code.trim();
     const highlighted = lang ? highlight(decoded, lang) : escapeHtml(decoded);
-    return `<div class="chat-code-block"><div class="chat-code-header"><span class="chat-code-lang">${lang || 'text'}</span><button class="chat-code-copy" title="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button></div><pre><code>${highlighted}</code></pre></div>`;
+    const placeholder = `%%CODEBLOCK_${codeBlocks.length}%%`;
+    codeBlocks.push(`<div class="chat-code-block"><div class="chat-code-header"><span class="chat-code-lang">${lang || 'text'}</span><button class="chat-code-copy" title="Copy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg></button></div><pre><code>${highlighted}</code></pre></div>`);
+    return placeholder;
   });
 
+  // Extract tables before escaping
+  const tables = [];
+  processed = processed.replace(/((?:^\|.+\|$\n?)+)/gm, (tableBlock) => {
+    const rows = tableBlock.trim().split('\n').filter(r => r.trim());
+    if (rows.length < 2) return tableBlock;
+
+    // Check if second row is a separator (|---|---|)
+    const sepRow = rows[1].trim();
+    if (!/^\|[\s:]*-{2,}[\s:]*(\|[\s:]*-{2,}[\s:]*)*\|$/.test(sepRow)) return tableBlock;
+
+    const parseRow = (row) => row.replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+    const headers = parseRow(rows[0]);
+    // Parse alignment from separator row
+    const sepCells = parseRow(rows[1]);
+    const aligns = sepCells.map(c => {
+      if (c.startsWith(':') && c.endsWith(':')) return 'center';
+      if (c.endsWith(':')) return 'right';
+      return 'left';
+    });
+    const bodyRows = rows.slice(2).map(parseRow);
+
+    let tableHtml = '<div class="chat-table-wrapper"><table class="chat-table"><thead><tr>';
+    headers.forEach((h, i) => {
+      tableHtml += `<th style="text-align:${aligns[i] || 'left'}">${escapeHtml(h)}</th>`;
+    });
+    tableHtml += '</tr></thead><tbody>';
+    bodyRows.forEach(row => {
+      tableHtml += '<tr>';
+      headers.forEach((_, i) => {
+        const cell = row[i] || '';
+        tableHtml += `<td style="text-align:${aligns[i] || 'left'}">${escapeHtml(cell)}</td>`;
+      });
+      tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table></div>';
+
+    const placeholder = `%%TABLE_${tables.length}%%`;
+    tables.push(tableHtml);
+    return placeholder;
+  });
+
+  // Now escape HTML for the rest
+  let html = escapeHtml(processed);
+
+  // Inline formatting
   html = html.replace(/`([^`]+)`/g, '<code class="chat-inline-code">$1</code>');
   html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
   html = html.replace(/\*(.+?)\*/g, '<em>$1</em>');
@@ -35,6 +82,15 @@ function renderMarkdown(text) {
   html = html.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="chat-link" target="_blank">$1</a>');
   html = html.replace(/\n\n/g, '</p><p>');
   html = html.replace(/\n/g, '<br>');
+
+  // Restore code blocks and tables
+  codeBlocks.forEach((block, i) => {
+    html = html.replace(`%%CODEBLOCK_${i}%%`, block);
+  });
+  tables.forEach((table, i) => {
+    html = html.replace(`%%TABLE_${i}%%`, table);
+  });
+
   return `<p>${html}</p>`;
 }
 
@@ -110,8 +166,13 @@ function createChatView(wrapperEl, project, options = {}) {
       </div>
       <div class="chat-input-area">
         <div class="chat-slash-dropdown" style="display:none"></div>
+        <div class="chat-image-preview" style="display:none"></div>
         <div class="chat-input-wrapper">
+          <button class="chat-attach-btn" title="${escapeHtml(t('chat.attachImage') || 'Attach image')}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+          </button>
           <textarea class="chat-input" placeholder="${escapeHtml(t('chat.placeholder'))}" rows="1"></textarea>
+          <input type="file" class="chat-file-input" accept="image/png,image/jpeg,image/gif,image/webp" multiple style="display:none" />
           <div class="chat-input-actions">
             <button class="chat-stop-btn" title="Stop" style="display:none">
               <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
@@ -147,6 +208,91 @@ function createChatView(wrapperEl, project, options = {}) {
   const statusTokens = chatView.querySelector('.chat-status-tokens');
   const statusCost = chatView.querySelector('.chat-status-cost');
   const slashDropdown = chatView.querySelector('.chat-slash-dropdown');
+  const attachBtn = chatView.querySelector('.chat-attach-btn');
+  const fileInput = chatView.querySelector('.chat-file-input');
+  const imagePreview = chatView.querySelector('.chat-image-preview');
+
+  // ── Image attachments ──
+
+  const pendingImages = []; // Array of { base64, mediaType, name, dataUrl }
+  const SUPPORTED_TYPES = ['image/png', 'image/jpeg', 'image/gif', 'image/webp'];
+  const MAX_IMAGE_SIZE = 20 * 1024 * 1024; // 20MB
+
+  attachBtn.addEventListener('click', () => fileInput.click());
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files.length) {
+      addImageFiles(fileInput.files);
+      fileInput.value = '';
+    }
+  });
+
+  function addImageFiles(files) {
+    for (const file of files) {
+      if (!SUPPORTED_TYPES.includes(file.type)) continue;
+      if (file.size > MAX_IMAGE_SIZE) continue;
+      const reader = new FileReader();
+      reader.onload = () => {
+        const dataUrl = reader.result;
+        const base64 = dataUrl.split(',')[1];
+        pendingImages.push({ base64, mediaType: file.type, name: file.name, dataUrl });
+        renderImagePreview();
+      };
+      reader.readAsDataURL(file);
+    }
+  }
+
+  function removeImage(index) {
+    pendingImages.splice(index, 1);
+    renderImagePreview();
+  }
+
+  function renderImagePreview() {
+    if (pendingImages.length === 0) {
+      imagePreview.style.display = 'none';
+      imagePreview.innerHTML = '';
+      return;
+    }
+    imagePreview.style.display = 'flex';
+    imagePreview.innerHTML = pendingImages.map((img, i) => `
+      <div class="chat-image-thumb" data-index="${i}">
+        <img src="${img.dataUrl}" alt="${escapeHtml(img.name)}" />
+        <button class="chat-image-remove" data-index="${i}" title="Remove">&times;</button>
+      </div>
+    `).join('');
+    imagePreview.querySelectorAll('.chat-image-remove').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        removeImage(parseInt(btn.dataset.index));
+      });
+    });
+  }
+
+  // Drag & drop on chat area
+  chatView.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    chatView.classList.add('chat-dragover');
+  });
+  chatView.addEventListener('dragleave', (e) => {
+    if (!chatView.contains(e.relatedTarget)) {
+      chatView.classList.remove('chat-dragover');
+    }
+  });
+  chatView.addEventListener('drop', (e) => {
+    e.preventDefault();
+    chatView.classList.remove('chat-dragover');
+    const files = Array.from(e.dataTransfer.files).filter(f => SUPPORTED_TYPES.includes(f.type));
+    if (files.length) addImageFiles(files);
+  });
+
+  // Paste images from clipboard
+  inputEl.addEventListener('paste', (e) => {
+    const items = Array.from(e.clipboardData.items).filter(i => i.type.startsWith('image/'));
+    if (items.length === 0) return;
+    e.preventDefault();
+    const files = items.map(i => i.getAsFile()).filter(Boolean);
+    if (files.length) addImageFiles(files);
+  });
 
   // ── Input handling ──
 
@@ -351,16 +497,25 @@ function createChatView(wrapperEl, project, options = {}) {
 
   async function handleSend() {
     const text = inputEl.value.trim();
-    if (!text || isStreaming || sendLock) return;
+    const hasImages = pendingImages.length > 0;
+    if ((!text && !hasImages) || isStreaming || sendLock) return;
 
     sendLock = true;
     if (project?.id) recordActivity(project.id);
-    appendUserMessage(text);
+
+    // Snapshot images and clear pending
+    const images = hasImages ? pendingImages.splice(0) : [];
+    renderImagePreview();
+
+    appendUserMessage(text, images);
     inputEl.value = '';
     inputEl.style.height = 'auto';
     turnHadAssistantContent = false;
     setStreaming(true);
     appendThinkingIndicator();
+
+    // Prepare images payload (without dataUrl to reduce IPC size)
+    const imagesPayload = images.map(({ base64, mediaType }) => ({ base64, mediaType }));
 
     try {
       if (!sessionId) {
@@ -369,9 +524,10 @@ function createChatView(wrapperEl, project, options = {}) {
         sessionId = `chat-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
         const startOpts = {
           cwd: project.path,
-          prompt: text,
+          prompt: text || '',
           permissionMode: skipPermissions ? 'bypassPermissions' : 'default',
-          sessionId
+          sessionId,
+          images: imagesPayload
         };
         if (pendingResumeId) {
           startOpts.resumeSessionId = pendingResumeId;
@@ -384,7 +540,7 @@ function createChatView(wrapperEl, project, options = {}) {
           setStreaming(false);
         }
       } else {
-        const result = await api.chat.send({ sessionId, text });
+        const result = await api.chat.send({ sessionId, text, images: imagesPayload });
         if (!result.success) {
           appendError(result.error || t('chat.errorOccurred'));
           setStreaming(false);
@@ -687,12 +843,21 @@ function createChatView(wrapperEl, project, options = {}) {
 
   // ── DOM helpers ──
 
-  function appendUserMessage(text) {
+  function appendUserMessage(text, images = []) {
     const welcome = messagesEl.querySelector('.chat-welcome');
     if (welcome) welcome.remove();
     const el = document.createElement('div');
     el.className = 'chat-msg chat-msg-user';
-    el.innerHTML = `<div class="chat-msg-content">${renderMarkdown(text)}</div>`;
+    let html = '';
+    if (images.length > 0) {
+      html += `<div class="chat-msg-images">${images.map(img =>
+        `<img src="${img.dataUrl}" alt="${escapeHtml(img.name || 'image')}" class="chat-msg-image" />`
+      ).join('')}</div>`;
+    }
+    if (text) {
+      html += `<div class="chat-msg-content">${renderMarkdown(text)}</div>`;
+    }
+    el.innerHTML = html;
     messagesEl.appendChild(el);
     scrollToBottom();
   }
