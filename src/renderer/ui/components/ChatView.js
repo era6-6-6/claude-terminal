@@ -73,7 +73,7 @@ function getToolDisplayInfo(toolName, input) {
 // ── Create Chat View ──
 
 function createChatView(wrapperEl, project, options = {}) {
-  const { resumeSessionId = null, skipPermissions = false, onTabRename = null } = options;
+  const { terminalId = null, resumeSessionId = null, skipPermissions = false, onTabRename = null, onStatusChange = null } = options;
   let sessionId = null;
   let isStreaming = false;
   let pendingResumeId = resumeSessionId || null;
@@ -1275,6 +1275,24 @@ function createChatView(wrapperEl, project, options = {}) {
   function setStatus(state, text) {
     statusDot.className = `chat-status-dot ${state}`;
     statusTextEl.textContent = text || '';
+
+    // Propagate to terminal tab status (blip, project list counter)
+    if (onStatusChange) {
+      switch (state) {
+        case 'idle':
+          onStatusChange('ready');
+          break;
+        case 'waiting':
+          onStatusChange('working', 'waiting');
+          break;
+        case 'working':
+          onStatusChange('working', 'tool_calling');
+          break;
+        default: // thinking, responding
+          onStatusChange('working', 'thinking');
+          break;
+      }
+    }
   }
 
   function updateStatusInfo() {

@@ -796,11 +796,13 @@ function updateTerminalStatus(id, status) {
     updateTerminal(id, { status });
     const tab = document.querySelector(`.terminal-tab[data-id="${id}"]`);
     if (tab) {
-      tab.classList.remove('status-working', 'status-ready', 'status-loading', 'substatus-thinking', 'substatus-tool');
+      tab.classList.remove('status-working', 'status-ready', 'status-loading', 'substatus-thinking', 'substatus-tool', 'substatus-waiting');
       tab.classList.add(`status-${status}`);
       if (status === 'working') {
         const sub = terminalSubstatus.get(id);
-        tab.classList.add(sub === 'tool_calling' ? 'substatus-tool' : 'substatus-thinking');
+        if (sub === 'tool_calling') tab.classList.add('substatus-tool');
+        else if (sub === 'waiting') tab.classList.add('substatus-waiting');
+        else tab.classList.add('substatus-thinking');
       }
     }
     // Dismiss loading overlay when Claude is ready
@@ -817,10 +819,8 @@ function updateTerminalStatus(id, status) {
       const hooksActive = (() => { try { return require('../../events').getActiveProvider() === 'hooks'; } catch (e) { return false; } })();
       if (!hooksActive && callbacks.onNotification) {
         const projectName = termData.project?.name || termData.name;
-        const bufCtx = termData.terminal ? extractTerminalContext(termData.terminal) : null;
         const richCtx = terminalContext.get(id);
-        const label = richCtx?.taskName || projectName;
-        let notifTitle = 'Claude Terminal';
+        let notifTitle = projectName || 'Claude Terminal';
         let body;
 
         if (richCtx?.toolCount > 0) {
@@ -829,14 +829,46 @@ function updateTerminalStatus(id, status) {
           body = t('terminals.notifDone');
         }
 
-        if (richCtx?.taskName) notifTitle = projectName;
-
         callbacks.onNotification('done', notifTitle, body, id);
       }
     }
     // Re-render project list to update terminal stats
     if (callbacks.onRenderProjects) {
       callbacks.onRenderProjects();
+    }
+  }
+}
+
+/**
+ * Update chat terminal status with substatus support.
+ * Unlike regular terminals (scraping-based), chat terminals have precise
+ * state info from the SDK, so we can update substatus independently.
+ */
+function updateChatTerminalStatus(id, status, substatus) {
+  // Update substatus map
+  if (substatus) {
+    terminalSubstatus.set(id, substatus);
+  } else {
+    terminalSubstatus.delete(id);
+  }
+
+  const termData = getTerminal(id);
+  if (!termData) return;
+
+  const tab = document.querySelector(`.terminal-tab[data-id="${id}"]`);
+
+  if (termData.status !== status) {
+    // Main status changed — delegate to updateTerminalStatus (handles notifications, re-render, etc.)
+    updateTerminalStatus(id, status);
+  } else if (tab && status === 'working') {
+    // Same status but substatus changed — update tab CSS directly
+    tab.classList.remove('substatus-thinking', 'substatus-tool', 'substatus-waiting');
+    if (substatus === 'tool_calling') {
+      tab.classList.add('substatus-tool');
+    } else if (substatus === 'waiting') {
+      tab.classList.add('substatus-waiting');
+    } else {
+      tab.classList.add('substatus-thinking');
     }
   }
 }
@@ -3561,6 +3593,7 @@ async function createChatTerminal(project, options = {}) {
 
   // Create ChatView inside wrapper
   const chatView = createChatView(wrapper, project, {
+    terminalId: id,
     skipPermissions,
     resumeSessionId,
     onTabRename: (name) => {
@@ -3568,7 +3601,8 @@ async function createChatTerminal(project, options = {}) {
       if (nameEl) nameEl.textContent = name;
       const data = getTerminal(id);
       if (data) data.name = name;
-    }
+    },
+    onStatusChange: (status, substatus) => updateChatTerminalStatus(id, status, substatus)
   });
   const storedData = getTerminal(id);
   if (storedData) {
@@ -3634,7 +3668,9 @@ async function switchTerminalMode(id) {
     tab.classList.add('chat-mode');
 
     const chatView = createChatView(wrapper, project, {
-      skipPermissions: getSetting('skipPermissions') || false
+      terminalId: id,
+      skipPermissions: getSetting('skipPermissions') || false,
+      onStatusChange: (status, substatus) => updateChatTerminalStatus(id, status, substatus)
     });
 
     updateTerminal(id, { mode: 'chat', chatView, terminal: null, fitAddon: null, status: 'ready' });

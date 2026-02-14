@@ -2086,6 +2086,16 @@ body.compact-projects .project-item:not(.active):hover {
   animation: pulse-tool 1.2s infinite;
 }
 
+.terminal-tab.status-working.substatus-waiting .status-dot {
+  background: #F97316;
+  animation: pulse-waiting 2s infinite;
+}
+
+@keyframes pulse-waiting {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
 .terminal-tab.status-ready .status-dot {
   background: var(--success);
 }
@@ -19239,11 +19249,8 @@ select:focus-visible {
   height: 13px;
 }
 
-/* Chat mode tab indicator */
-.terminal-tab.chat-mode .status-dot {
-  background: var(--accent-color);
-  box-shadow: 0 0 4px var(--accent-color);
-}
+/* Chat mode tabs use the same status-dot styling as regular terminals
+   (status-ready, status-working, substatus-*) — no override needed */
 
 /* ========== BACKGROUND PAUSE ==========
    Pause all animations when the app is hidden to save CPU */
