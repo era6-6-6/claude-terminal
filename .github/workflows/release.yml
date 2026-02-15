@@ -29,6 +29,7 @@ jobs:
         with:
           files: |
             build/*.exe
+            build/*.exe.blockmap
             build/*.yml
           draft: true
           generate_release_notes: true
@@ -52,6 +53,8 @@ jobs:
         with:
           files: |
             build/*.dmg
+            build/*.dmg.blockmap
+            build/*.yml
           draft: true
           generate_release_notes: true
 
@@ -74,5 +77,6 @@ jobs:
         with:
           files: |
             build/*.AppImage
+            build/*.yml
           draft: true
           generate_release_notes: true
