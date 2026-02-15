@@ -1432,7 +1432,8 @@ async function handlePull() {
     showToast(t('git.pulling'), 'info');
     const result = await api.git.pull({ projectPath: selectedProject.path });
     if (result.success) {
-      showToast(result.output || 'Pull successful', 'success');
+      const isUpToDate = result.output && result.output.includes('Already up to date');
+      showToast(isUpToDate ? t('git.pullUpToDate') : t('git.pullSuccess'), isUpToDate ? 'info' : 'success');
     } else if (result.hasConflicts) {
       showToast(t('gitTab.mergeInProgress'), 'warning');
     } else {
@@ -1448,7 +1449,7 @@ async function handlePush() {
     showToast(t('git.pushing'), 'info');
     const result = await api.git.push({ projectPath: selectedProject.path });
     if (result.success) {
-      showToast(result.output || 'Push successful', 'success');
+      showToast(t('git.pushSuccess'), 'success');
       await loadAllData(selectedProject);
       renderGitTab();
     } else {
