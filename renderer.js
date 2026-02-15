@@ -382,8 +382,9 @@ function renderShortcutsPanel() {
   const customShortcuts = settingsState.get().shortcuts || {};
 
   let html = `
-    <div class="settings-section">
-      <div class="settings-title">${t('shortcuts.title')}</div>
+    <div class="settings-group">
+      <div class="settings-group-title">${t('shortcuts.title')}</div>
+      <div class="settings-card">
       <div class="shortcuts-list">
   `;
 
@@ -416,6 +417,7 @@ function renderShortcutsPanel() {
           </svg>
           ${t('shortcuts.resetAll')}
         </button>
+      </div>
       </div>
     </div>
   `;
@@ -1823,40 +1825,18 @@ async function renderSettingsTab(initialTab = 'general') {
 
   container.innerHTML = `
     <div class="settings-inline-wrapper">
-      <div class="settings-inline-header">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-        <h2>${t('settings.title')}</h2>
-      </div>
       <div class="settings-tabs">
-        <button class="settings-tab ${initialTab === 'general' ? 'active' : ''}" data-tab="general">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
-          General
-        </button>
-        <button class="settings-tab ${initialTab === 'claude' ? 'active' : ''}" data-tab="claude">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 14H4V8h16v10z"/></svg>
-          Claude
-        </button>
-        <button class="settings-tab ${initialTab === 'github' ? 'active' : ''}" data-tab="github">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-          GitHub
-        </button>
-        <button class="settings-tab ${initialTab === 'themes' ? 'active' : ''}" data-tab="themes">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-          Themes
-        </button>
-        <button class="settings-tab ${initialTab === 'shortcuts' ? 'active' : ''}" data-tab="shortcuts">
-          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 5H4c-1.1 0-1.99.9-1.99 2L2 17c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V7c0-1.1-.9-2-2-2zm-9 3h2v2h-2V8zm0 3h2v2h-2v-2zM8 8h2v2H8V8zm0 3h2v2H8v-2zm-1 2H5v-2h2v2zm0-3H5V8h2v2zm9 7H8v-2h8v2zm0-4h-2v-2h2v2zm0-3h-2V8h2v2zm3 3h-2v-2h2v2zm0-3h-2V8h2v2z"/></svg>
-          Raccourcis
-        </button>
+        <button class="settings-tab ${initialTab === 'general' ? 'active' : ''}" data-tab="general">${t('settings.tabGeneral')}</button>
+        <button class="settings-tab ${initialTab === 'claude' ? 'active' : ''}" data-tab="claude">${t('settings.tabClaude')}</button>
+        <button class="settings-tab ${initialTab === 'github' ? 'active' : ''}" data-tab="github">${t('settings.tabGitHub')}</button>
+        <button class="settings-tab ${initialTab === 'themes' ? 'active' : ''}" data-tab="themes">${t('settings.tabThemes')}</button>
+        <button class="settings-tab ${initialTab === 'shortcuts' ? 'active' : ''}" data-tab="shortcuts">${t('settings.tabShortcuts')}</button>
         ${(() => {
           const registry = require('./src/project-types/registry');
           const dynamicTabs = registry.collectAllSettingsFields();
           let tabsHtml = '';
           dynamicTabs.forEach((tabData, tabId) => {
-            tabsHtml += `<button class="settings-tab ${initialTab === tabId ? 'active' : ''}" data-tab="${tabId}">
-              ${tabData.icon}
-              ${tabData.label}
-            </button>`;
+            tabsHtml += `<button class="settings-tab ${initialTab === tabId ? 'active' : ''}" data-tab="${tabId}">${tabData.label}</button>`;
           });
           return tabsHtml;
         })()}
@@ -1864,51 +1844,62 @@ async function renderSettingsTab(initialTab = 'general') {
       <div class="settings-content">
         <!-- General Tab -->
         <div class="settings-panel ${initialTab === 'general' ? 'active' : ''}" data-panel="general">
-          <div class="settings-section">
-            <div class="settings-title">Apparence</div>
-            <div class="settings-row">
-              <div class="settings-label">
-                <div>${t('settings.language')}</div>
-                <div class="settings-desc">Change the interface language</div>
+          <div class="settings-group">
+            <div class="settings-group-title">${t('settings.appearance')}</div>
+            <div class="settings-card">
+              <div class="settings-row">
+                <div class="settings-label">
+                  <div>${t('settings.language')}</div>
+                  <div class="settings-desc">${t('settings.languageDesc')}</div>
+                </div>
+                <div class="settings-dropdown" id="language-dropdown" data-value="${currentLang}">
+                  <div class="settings-dropdown-trigger">
+                    <span>${availableLanguages.find(l => l.code === currentLang)?.name || currentLang}</span>
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                  </div>
+                  <div class="settings-dropdown-menu">
+                    ${availableLanguages.map(lang =>
+                      `<div class="settings-dropdown-option ${currentLang === lang.code ? 'selected' : ''}" data-value="${lang.code}">
+                        <span class="dropdown-check"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                        ${lang.name}
+                      </div>`
+                    ).join('')}
+                  </div>
+                </div>
               </div>
-              <select id="language-select" class="settings-select">
-                ${availableLanguages.map(lang =>
-                  `<option value="${lang.code}" ${currentLang === lang.code ? 'selected' : ''}>${lang.name}</option>`
+              <div class="settings-row">
+                <div class="settings-label">
+                  <div>${t('settings.accentColor')}</div>
+                  <div class="settings-desc">${t('settings.accentColorDesc')}</div>
+                </div>
+              </div>
+              <div class="color-picker">
+                ${['#d97706', '#dc2626', '#db2777', '#9333ea', '#4f46e5', '#2563eb', '#0891b2', '#0d9488', '#16a34a', '#65a30d'].map(c =>
+                  `<button class="color-swatch ${settings.accentColor === c ? 'selected' : ''}" style="background:${c}" data-color="${c}"></button>`
                 ).join('')}
-              </select>
-            </div>
-            <div class="settings-row">
-              <div class="settings-label">
-                <div>Couleur d'accent</div>
-                <div class="settings-desc">Personnalisez la couleur principale de l'interface</div>
+                <div class="color-swatch-custom ${!['#d97706', '#dc2626', '#db2777', '#9333ea', '#4f46e5', '#2563eb', '#0891b2', '#0d9488', '#16a34a', '#65a30d'].includes(settings.accentColor) ? 'selected' : ''}" style="background:${!['#d97706', '#dc2626', '#db2777', '#9333ea', '#4f46e5', '#2563eb', '#0891b2', '#0d9488', '#16a34a', '#65a30d'].includes(settings.accentColor) ? settings.accentColor : 'var(--bg-tertiary)'}">
+                  <input type="color" id="custom-color-input" value="${settings.accentColor}" title="${t('settings.accentColor')}">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+                </div>
               </div>
-            </div>
-            <div class="color-picker">
-              ${['#d97706', '#dc2626', '#db2777', '#9333ea', '#4f46e5', '#2563eb', '#0891b2', '#0d9488', '#16a34a', '#65a30d'].map(c =>
-                `<button class="color-swatch ${settings.accentColor === c ? 'selected' : ''}" style="background:${c}" data-color="${c}"></button>`
-              ).join('')}
-              <div class="color-swatch-custom ${!['#d97706', '#dc2626', '#db2777', '#9333ea', '#4f46e5', '#2563eb', '#0891b2', '#0d9488', '#16a34a', '#65a30d'].includes(settings.accentColor) ? 'selected' : ''}" style="background:${!['#d97706', '#dc2626', '#db2777', '#9333ea', '#4f46e5', '#2563eb', '#0891b2', '#0d9488', '#16a34a', '#65a30d'].includes(settings.accentColor) ? settings.accentColor : 'var(--bg-tertiary)'}">
-                <input type="color" id="custom-color-input" value="${settings.accentColor}" title="Choisir une couleur personnalisee">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
+              <div class="settings-row">
+                <div class="settings-label">
+                  <div>${t('settings.terminalTheme')}</div>
+                  <div class="settings-desc">${t('settings.terminalThemeDesc')}</div>
+                </div>
+                <button type="button" class="btn-outline" id="btn-go-themes">
+                  ${TERMINAL_THEMES[settings.terminalTheme || 'claude']?.name || 'Claude'}
+                </button>
               </div>
-            </div>
-            <div class="settings-row" style="margin-top: 16px;">
-              <div class="settings-label">
-                <div>Theme du terminal</div>
-                <div class="settings-desc">Changez les couleurs du terminal</div>
-              </div>
-              <button type="button" class="btn-outline" id="btn-go-themes">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M12 3c-4.97 0-9 4.03-9 9s4.03 9 9 9c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c2.76 0 5-2.24 5-5 0-4.42-4.03-8-9-8zm-5.5 9c-.83 0-1.5-.67-1.5-1.5S5.67 9 6.5 9 8 9.67 8 10.5 7.33 12 6.5 12zm3-4C8.67 8 8 7.33 8 6.5S8.67 5 9.5 5s1.5.67 1.5 1.5S10.33 8 9.5 8zm5 0c-.83 0-1.5-.67-1.5-1.5S13.67 5 14.5 5s1.5.67 1.5 1.5S15.33 8 14.5 8zm3 4c-.83 0-1.5-.67-1.5-1.5S16.67 9 17.5 9s1.5.67 1.5 1.5-.67 1.5-1.5 1.5z"/></svg>
-                ${TERMINAL_THEMES[settings.terminalTheme || 'claude']?.name || 'Claude'}
-              </button>
             </div>
           </div>
-          <div class="settings-section">
-            <div class="settings-title">Systeme</div>
+          <div class="settings-group">
+            <div class="settings-group-title">${t('settings.system')}</div>
+            <div class="settings-card">
             <div class="settings-toggle-row">
               <div class="settings-toggle-label">
-                <div>Lancer au demarrage</div>
-                <div class="settings-toggle-desc">Demarrer automatiquement avec Windows</div>
+                <div>${t('settings.launchAtStartup')}</div>
+                <div class="settings-toggle-desc">${t('settings.launchAtStartupDesc')}</div>
               </div>
               <label class="settings-toggle">
                 <input type="checkbox" id="launch-at-startup-toggle" ${launchAtStartup ? 'checked' : ''}>
@@ -1917,8 +1908,8 @@ async function renderSettingsTab(initialTab = 'general') {
             </div>
             <div class="settings-toggle-row">
               <div class="settings-toggle-label">
-                <div>Vue compacte des projets</div>
-                <div class="settings-toggle-desc">Afficher uniquement le nom des projets non selectionnes</div>
+                <div>${t('settings.compactProjects')}</div>
+                <div class="settings-toggle-desc">${t('settings.compactProjectsDesc')}</div>
               </div>
               <label class="settings-toggle">
                 <input type="checkbox" id="compact-projects-toggle" ${settings.compactProjects !== false ? 'checked' : ''}>
@@ -1947,30 +1938,39 @@ async function renderSettingsTab(initialTab = 'general') {
             </div>
             <div class="settings-row">
               <div class="settings-label">
-                <div>Fermeture de la fenetre</div>
-                <div class="settings-desc">Action quand vous cliquez sur fermer</div>
+                <div>${t('settings.closeWindow')}</div>
+                <div class="settings-desc">${t('settings.closeWindowDesc')}</div>
               </div>
-              <select id="close-action-select" class="settings-select">
-                <option value="ask" ${settings.closeAction === 'ask' || !settings.closeAction ? 'selected' : ''}>Demander</option>
-                <option value="minimize" ${settings.closeAction === 'minimize' ? 'selected' : ''}>Minimiser</option>
-                <option value="quit" ${settings.closeAction === 'quit' ? 'selected' : ''}>Quitter</option>
-              </select>
+              <div class="settings-dropdown" id="close-action-dropdown" data-value="${settings.closeAction || 'ask'}">
+                <div class="settings-dropdown-trigger">
+                  <span>${{'ask':t('settings.closeOptionAsk'),'minimize':t('settings.closeOptionMinimize'),'quit':t('settings.closeOptionQuit')}[settings.closeAction || 'ask']}</span>
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 10l5 5 5-5z"/></svg>
+                </div>
+                <div class="settings-dropdown-menu">
+                  ${[{v:'ask',l:t('settings.closeOptionAsk')},{v:'minimize',l:t('settings.closeOptionMinimize')},{v:'quit',l:t('settings.closeOptionQuit')}].map(o =>
+                    `<div class="settings-dropdown-option ${(settings.closeAction || 'ask') === o.v ? 'selected' : ''}" data-value="${o.v}">
+                      <span class="dropdown-check"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></span>
+                      ${o.l}
+                    </div>`
+                  ).join('')}
+                </div>
+              </div>
             </div>
-            <div class="settings-row" style="margin-top: 8px;">
+            <div class="settings-row">
               <div class="settings-label">
                 <div>${t('settings.checkForUpdates') || 'Mises a jour'}</div>
                 <div class="settings-desc">${t('settings.checkForUpdatesDesc') || 'Verifier si une nouvelle version est disponible'}</div>
               </div>
               <button type="button" class="btn-outline" id="btn-check-updates">
-                <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M21 10.12h-6.78l2.74-2.82c-2.73-2.7-7.15-2.8-9.88-.1-2.73 2.71-2.73 7.08 0 9.79s7.15 2.71 9.88 0C18.32 15.65 19 14.08 19 12.1h2c0 1.98-.88 4.55-2.64 6.29-3.51 3.48-9.21 3.48-12.72 0-3.5-3.47-3.53-9.11-.02-12.58s9.14-3.49 12.65 0L21 3v7.12z"/></svg>
                 ${t('settings.checkForUpdatesBtn') || 'Verifier'}
               </button>
             </div>
+            </div>
           </div>
-          <!-- Quick Action Presets Section -->
-          <div class="settings-section">
-            <div class="settings-title">${t('settings.quickActionPresets') || 'Quick Action Presets'}</div>
-            <div class="settings-desc" style="margin-bottom: 10px;">${t('settings.quickActionPresetsDesc') || 'Presets personnalises affiches dans la configuration des actions rapides'}</div>
+          <div class="settings-group">
+            <div class="settings-group-title">${t('settings.quickActionPresets') || 'Quick Action Presets'}</div>
+            <div class="settings-card">
+            <div class="settings-desc" style="margin-bottom: 10px; padding: 8px 16px 0;">${t('settings.quickActionPresetsDesc') || 'Presets personnalises affiches dans la configuration des actions rapides'}</div>
             <div class="custom-presets-list" id="custom-presets-list">
               ${(settings.customPresets || []).map((p, i) => `
                 <div class="custom-preset-item" data-index="${i}">
@@ -1998,20 +1998,22 @@ async function renderSettingsTab(initialTab = 'general') {
                 <span>${t('settings.addPreset') || 'Ajouter un preset'}</span>
               </button>
             </div>
+            </div>
           </div>
         </div>
         <!-- Claude Tab -->
         <div class="settings-panel ${initialTab === 'claude' ? 'active' : ''}" data-panel="claude">
-          <div class="settings-section">
-            <div class="settings-title">Mode d'execution</div>
+          <div class="settings-group">
+            <div class="settings-group-title">${t('settings.executionMode')}</div>
+            <div class="settings-card">
             <div class="execution-mode-selector">
               <div class="execution-mode-card ${!settings.skipPermissions ? 'selected' : ''}" data-mode="safe">
                 <div class="execution-mode-icon safe">
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
                 </div>
                 <div class="execution-mode-content">
-                  <div class="execution-mode-title">Mode securise</div>
-                  <div class="execution-mode-desc">Claude demande confirmation avant chaque action</div>
+                  <div class="execution-mode-title">${t('settings.modeSafe')}</div>
+                  <div class="execution-mode-desc">${t('settings.modeSafeDesc')}</div>
                 </div>
                 <div class="execution-mode-check"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
               </div>
@@ -2020,8 +2022,8 @@ async function renderSettingsTab(initialTab = 'general') {
                   <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
                 </div>
                 <div class="execution-mode-content">
-                  <div class="execution-mode-title">Mode autonome</div>
-                  <div class="execution-mode-desc">Claude execute sans confirmation</div>
+                  <div class="execution-mode-title">${t('settings.modeAutonomous')}</div>
+                  <div class="execution-mode-desc">${t('settings.modeAutonomousDesc')}</div>
                   <div class="execution-mode-flag">--dangerously-skip-permissions</div>
                 </div>
                 <div class="execution-mode-check"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
@@ -2029,11 +2031,13 @@ async function renderSettingsTab(initialTab = 'general') {
             </div>
             <div class="settings-warning" id="dangerous-warning" style="display: ${settings.skipPermissions ? 'flex' : 'none'};">
               <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L1 21h22L12 2zm0 3.99L19.53 19H4.47L12 5.99zM11 10v4h2v-4h-2zm0 6v2h2v-2h-2z"/></svg>
-              <span>Ce mode permet a Claude d'executer des commandes sans validation.</span>
+              <span>${t('settings.modeAutonomousWarning')}</span>
+            </div>
             </div>
           </div>
-          <div class="settings-section">
-            <div class="settings-title">${t('settings.defaultTerminalMode')}</div>
+          <div class="settings-group">
+            <div class="settings-group-title">${t('settings.defaultTerminalMode')}</div>
+            <div class="settings-card">
             <div class="execution-mode-selector">
               <div class="execution-mode-card terminal-mode-card ${(settings.defaultTerminalMode || 'terminal') === 'terminal' ? 'selected' : ''}" data-terminal-mode="terminal">
                 <div class="execution-mode-icon safe">
@@ -2056,9 +2060,11 @@ async function renderSettingsTab(initialTab = 'general') {
                 <div class="execution-mode-check"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg></div>
               </div>
             </div>
+            </div>
           </div>
-          <div class="settings-section">
-            <div class="settings-title">${t('settings.hooks.title') || 'Smart Hooks'}</div>
+          <div class="settings-group">
+            <div class="settings-group-title">${t('settings.hooks.title') || 'Smart Hooks'}</div>
+            <div class="settings-card">
             <div class="settings-toggle-row">
               <div class="settings-toggle-label">
                 <div>${t('settings.hooks.enable') || 'Enable Smart Hooks'}</div>
@@ -2069,12 +2075,14 @@ async function renderSettingsTab(initialTab = 'general') {
                 <span class="settings-toggle-slider"></span>
               </label>
             </div>
+            </div>
           </div>
         </div>
         <!-- GitHub Tab -->
         <div class="settings-panel ${initialTab === 'github' ? 'active' : ''}" data-panel="github">
-          <div class="settings-section">
-            <div class="settings-title">Compte GitHub</div>
+          <div class="settings-group">
+            <div class="settings-group-title">${t('settings.githubAccount')}</div>
+            <div class="settings-card">
             <div class="github-account-card" id="github-account-card">
               ${githubStatus.authenticated ? `
                 <div class="github-account-connected">
@@ -2085,37 +2093,38 @@ async function renderSettingsTab(initialTab = 'general') {
                       <div class="github-account-login">@${githubStatus.login}</div>
                     </div>
                   </div>
-                  <button type="button" class="btn-outline-danger btn-sm" id="btn-github-disconnect">Deconnecter</button>
+                  <button type="button" class="btn-outline-danger btn-sm" id="btn-github-disconnect">${t('settings.githubDisconnect')}</button>
                 </div>
               ` : `
                 <div class="github-account-disconnected">
                   <div class="github-account-message">
                     <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
                     <div>
-                      <div class="github-account-title">Connectez votre compte GitHub</div>
-                      <div class="github-account-desc">Entrez un Personal Access Token pour cloner vos repos prives</div>
+                      <div class="github-account-title">${t('settings.githubConnectTitle')}</div>
+                      <div class="github-account-desc">${t('settings.githubConnectDesc')}</div>
                     </div>
                   </div>
                 </div>
                 <div class="github-token-form">
                   <div class="github-token-input-group">
                     <input type="password" id="github-token-input" class="github-token-input" placeholder="ghp_xxxxxxxxxxxx">
-                    <button type="button" class="btn-github-connect" id="btn-github-connect">Connecter</button>
+                    <button type="button" class="btn-github-connect" id="btn-github-connect">${t('settings.githubConnect')}</button>
                   </div>
                   <div class="github-token-help">
-                    <a href="#" id="github-token-help-link">Comment creer un token ?</a>
+                    <a href="#" id="github-token-help-link">${t('settings.githubTokenHelp')}</a>
                   </div>
                 </div>
               `}
             </div>
             <div class="github-device-flow-container" id="github-device-flow" style="display: none;"></div>
+            </div>
           </div>
         </div>
         <!-- Themes Tab -->
         <div class="settings-panel ${initialTab === 'themes' ? 'active' : ''}" data-panel="themes">
-          <div class="settings-section">
-            <div class="settings-title">Theme du terminal</div>
-            <div class="settings-desc" style="margin-bottom: 12px;">Choisissez un theme pour personnaliser les couleurs de vos terminaux</div>
+          <div class="settings-group">
+            <div class="settings-group-title">${t('settings.themesTitle')}</div>
+            <div class="settings-desc" style="margin-bottom: 12px; color: var(--text-muted); font-size: 12px;">${t('settings.themesDesc')}</div>
             <div class="theme-grid" id="theme-grid">
               ${Object.entries(TERMINAL_THEMES).map(([id, theme]) => {
                 const isSelected = settings.terminalTheme === id || (!settings.terminalTheme && id === 'claude');
@@ -2136,6 +2145,7 @@ async function renderSettingsTab(initialTab = 'general') {
           </div>
         </div>
         <!-- Shortcuts Tab -->
+
         <div class="settings-panel ${initialTab === 'shortcuts' ? 'active' : ''}" data-panel="shortcuts">
           ${renderShortcutsPanel()}
         </div>
@@ -2168,12 +2178,11 @@ async function renderSettingsTab(initialTab = 'general') {
                 }
               }
               sectionsHtml += `
-                <div class="settings-section">
-                  <div class="settings-title">
-                    <span class="settings-title-icon">${section.typeIcon}</span>
-                    ${sectionName}
-                  </div>
+                <div class="settings-group">
+                  <div class="settings-group-title">${sectionName}</div>
+                  <div class="settings-card">
                   ${fieldsHtml}
+                  </div>
                 </div>`;
             });
             panelsHtml += `
@@ -2183,9 +2192,6 @@ async function renderSettingsTab(initialTab = 'general') {
           });
           return panelsHtml;
         })()}
-      </div>
-      <div class="settings-inline-footer">
-        <button type="button" class="btn-primary" id="btn-save-settings">Sauvegarder</button>
       </div>
     </div>
   `;
@@ -2408,15 +2414,50 @@ async function renderSettingsTab(initialTab = 'general') {
   }
   setupGitHubAuth();
 
-  // Save settings
-  document.getElementById('btn-save-settings').onclick = async () => {
+  // Custom dropdown behavior
+  container.querySelectorAll('.settings-dropdown').forEach(dropdown => {
+    const trigger = dropdown.querySelector('.settings-dropdown-trigger');
+    const menu = dropdown.querySelector('.settings-dropdown-menu');
+    trigger.onclick = (e) => {
+      e.stopPropagation();
+      container.querySelectorAll('.settings-dropdown.open').forEach(d => { if (d !== dropdown) d.classList.remove('open'); });
+      const wasOpen = dropdown.classList.contains('open');
+      dropdown.classList.toggle('open');
+      if (!wasOpen) {
+        const rect = trigger.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 4) + 'px';
+        menu.style.right = (window.innerWidth - rect.right) + 'px';
+        menu.style.minWidth = rect.width + 'px';
+      }
+    };
+    menu.querySelectorAll('.settings-dropdown-option').forEach(opt => {
+      opt.onclick = (e) => {
+        e.stopPropagation();
+        const value = opt.dataset.value;
+        dropdown.dataset.value = value;
+        trigger.querySelector('span').textContent = opt.textContent.trim();
+        menu.querySelectorAll('.settings-dropdown-option').forEach(o => o.classList.remove('selected'));
+        opt.classList.add('selected');
+        dropdown.classList.remove('open');
+        // Auto-save
+        setTimeout(() => saveSettingsHandler(), 50);
+      };
+    });
+  });
+  // Close dropdowns on outside click or scroll
+  const closeDropdowns = () => container.querySelectorAll('.settings-dropdown.open').forEach(d => d.classList.remove('open'));
+  document.addEventListener('click', closeDropdowns);
+  container.closest('.tab-content, .content-area, #settings-tab')?.addEventListener('scroll', closeDropdowns, { passive: true });
+
+  // Save settings - called by inline handlers or auto-save
+  const saveSettingsHandler = async () => {
     const selectedMode = container.querySelector('.execution-mode-card:not(.terminal-mode-card).selected');
     const selectedTerminalMode = container.querySelector('.terminal-mode-card.selected');
-    const closeActionSelect = document.getElementById('close-action-select');
+    const closeActionDropdown = document.getElementById('close-action-dropdown');
     const selectedThemeCard = container.querySelector('.theme-card.selected');
-    const languageSelect = document.getElementById('language-select');
+    const languageDropdown = document.getElementById('language-dropdown');
     const newTerminalTheme = selectedThemeCard?.dataset.themeId || 'claude';
-    const newLanguage = languageSelect?.value || getCurrentLanguage();
+    const newLanguage = languageDropdown?.dataset.value || getCurrentLanguage();
 
     // Get accent color from preset swatch or custom picker
     let accentColor = settings.accentColor;
@@ -2441,7 +2482,7 @@ async function renderSettingsTab(initialTab = 'general') {
       editor: settings.editor || 'code',
       skipPermissions: selectedMode?.dataset.mode === 'dangerous',
       accentColor,
-      closeAction: closeActionSelect?.value || 'ask',
+      closeAction: closeActionDropdown?.dataset.value || 'ask',
       terminalTheme: newTerminalTheme,
       language: newLanguage,
       compactProjects: newCompactProjects,
@@ -2509,6 +2550,15 @@ async function renderSettingsTab(initialTab = 'general') {
     // Show confirmation toast
     showToast({ type: 'info', title: t('settings.saved') || 'Settings saved', message: '' });
   };
+
+  // Auto-save on any toggle/select/swatch change
+  const autoSave = () => saveSettingsHandler();
+  container.querySelectorAll('.settings-toggle input, .settings-select').forEach(el => {
+    el.addEventListener('change', autoSave);
+  });
+  container.querySelectorAll('.execution-mode-card, .terminal-mode-card, .theme-card, .color-swatch').forEach(el => {
+    el.addEventListener('click', () => setTimeout(autoSave, 50));
+  });
 }
 
 window.closeModal = closeModal;
