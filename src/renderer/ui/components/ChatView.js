@@ -2022,6 +2022,9 @@ function createChatView(wrapperEl, project, options = {}) {
     const allDone = completed === total;
     todoAllDone = allDone;
 
+    // Debug log pour vérifier les valeurs
+    console.log(`Todo progress: ${completed}/${total} = ${pct}%`);
+
     // Build items HTML
     const itemsHtml = todos.map((todo, i) => {
       const s = todo.status;
@@ -2042,7 +2045,7 @@ function createChatView(wrapperEl, project, options = {}) {
     const html = `
       <button class="td-bar" aria-expanded="${todoExpanded}">
         <span class="td-count">${completed}<span class="td-count-sep">/</span>${total}</span>
-        <div class="td-track"><div class="td-fill${allDone ? ' td-fill-done' : ''}" style="width:${pct}%"></div></div>
+        <div class="td-track"><div class="td-fill${allDone ? ' td-fill-done' : ''}" style="width:${pct}%" data-pct="${pct}"></div></div>
         <span class="td-bar-text">${escapeHtml(activeText)}</span>
         <svg class="td-chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
