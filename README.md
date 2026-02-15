@@ -5,13 +5,13 @@
 <p align="center">
   <img src="https://img.shields.io/github/downloads/Sterll/claude-terminal/total?color=d97706&label=downloads" alt="Downloads" />
   <img src="https://img.shields.io/badge/version-0.8.5-orange" alt="Version" />
-  <img src="https://img.shields.io/badge/platform-Windows%2010%2F11-blue" alt="Windows" />
+  <img src="https://img.shields.io/badge/platform-Windows%20|%20macOS%20|%20Linux-blue" alt="Platform" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-green" alt="License" />
   <img src="https://img.shields.io/badge/electron-28-purple" alt="Electron" />
 </p>
 
 <p align="center">
-  A Windows desktop application for managing <a href="https://github.com/anthropics/claude-code">Claude Code</a> projects with an integrated terminal environment, git workflows, plugin management, and more.
+  A cross-platform desktop application for managing <a href="https://github.com/anthropics/claude-code">Claude Code</a> projects with an integrated terminal environment, git workflows, plugin management, and more.
 </p>
 
 <p align="center">
@@ -69,7 +69,7 @@
 - OAuth Device Flow authentication (secure, no token copy-paste)
 - View CI/CD workflow runs per repository
 - View and create pull requests
-- Token stored securely in Windows Credential Manager via keytar
+- Token stored securely via keytar (Windows Credential Manager, macOS Keychain, Linux libsecret)
 
 ### Dashboard
 - Per-project overview: current branch, commits ahead/behind, recent commits, contributors
@@ -136,9 +136,9 @@
 - First-launch setup wizard with optional hooks installation
 - System tray integration with accent-colored icon
 - Custom toast notifications with stacking, click-through transparency, and action buttons
-- Global shortcuts (`Ctrl+Shift+P` quick picker, `Ctrl+Shift+T` new terminal)
+- Global shortcuts (`Ctrl+Shift+P` / `Cmd+Shift+P` quick picker, `Ctrl+Shift+T` / `Cmd+Shift+T` new terminal)
 - Single instance lock
-- Custom NSIS installer with branded images
+- Custom NSIS installer with branded images (Windows), DMG (macOS), AppImage (Linux)
 - FiveM server management (launch, integrated console, resource scanning)
 - Web app management with framework auto-detection
 - Python project detection (version, venv, dependencies, entry point)
@@ -150,7 +150,11 @@
 
 - [Node.js](https://nodejs.org/) 18+
 - [Claude Code](https://github.com/anthropics/claude-code) installed globally
-- Windows 10 or 11
+- **Windows** 10 or 11
+- **macOS** 12+ (Intel or Apple Silicon)
+- **Linux** Ubuntu 22.04+, Fedora 38+, or equivalent
+  - AppImage requires `libfuse2` on Ubuntu 24.04+: `sudo apt install libfuse2`
+  - GitHub token storage requires `libsecret`: `sudo apt install libsecret-1-dev gnome-keyring`
 
 ## Installation
 
@@ -180,8 +184,13 @@ npm run watch
 ## Building
 
 ```bash
-# Build Windows installer (NSIS)
+# Build for current platform
 npm run build
+
+# Build for a specific platform
+npm run build:win     # Windows (NSIS installer)
+npm run build:mac     # macOS (DMG)
+npm run build:linux   # Linux (AppImage)
 ```
 
 The installer will be generated in the `build/` directory.
