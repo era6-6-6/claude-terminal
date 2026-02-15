@@ -10,7 +10,7 @@ const { app } = require('electron');
 const { execFileSync } = require('child_process');
 
 let sdkPromise = null;
-let resolvedNodePath = null;
+let resolvedRuntime = null;
 
 async function loadSDK() {
   if (!sdkPromise) {
@@ -32,84 +32,128 @@ function getSdkCliPath() {
 }
 
 /**
- * Resolve the absolute path to the `node` executable.
- * On macOS, apps launched from Finder/Dock don't inherit the shell PATH,
- * so `spawn("node", ...)` fails with ENOENT. This resolves node's path
- * via shell lookup and common install locations.
+ * Detect the best available JS runtime for the Agent SDK.
+ * Returns { executable, env } where:
+ * - executable is the SDK enum ('node'|'bun'|'deno')
+ * - env is a fresh copy of process.env with the runtime's dir prepended to PATH
+ *
+ * Detection result is cached, but env is rebuilt each call so callers
+ * can safely mutate process.env beforehand (e.g. removing CLAUDECODE).
+ *
+ * Priority: bun > deno > node (bun spawns fastest, deno second).
+ * On macOS/Linux, apps launched from Finder don't inherit shell PATH,
+ * so we probe common install locations and inject them into env.PATH.
  */
-function resolveNodeExecutable() {
-  if (resolvedNodePath) return resolvedNodePath;
+function resolveRuntime() {
+  // Cache hit — only rebuild env
+  if (resolvedRuntime) {
+    return {
+      executable: resolvedRuntime.executable,
+      env: buildEnv(resolvedRuntime.pathDir),
+    };
+  }
 
   const isWin = process.platform === 'win32';
+  const home = process.env.HOME || require('os').homedir();
 
-  // 1. In dev mode, try process.execPath only if it's actually node (not electron)
-  if (!app.isPackaged) {
-    const execName = path.basename(process.execPath).toLowerCase();
-    if (execName === 'node' || execName === 'node.exe') {
-      resolvedNodePath = process.execPath;
-      return resolvedNodePath;
+  // Runtime definitions: name (SDK enum), binary name, and search locations
+  const runtimes = [
+    {
+      name: 'bun',
+      bin: isWin ? 'bun.exe' : 'bun',
+      locations: isWin
+        ? [path.join(home, '.bun', 'bin')]
+        : [
+            path.join(home, '.bun', 'bin'),
+            '/usr/local/bin',
+            '/opt/homebrew/bin',
+          ],
+    },
+    {
+      name: 'deno',
+      bin: isWin ? 'deno.exe' : 'deno',
+      locations: isWin
+        ? [path.join(home, '.deno', 'bin')]
+        : [
+            path.join(home, '.deno', 'bin'),
+            '/usr/local/bin',
+            '/opt/homebrew/bin',
+          ],
+    },
+    {
+      name: 'node',
+      bin: isWin ? 'node.exe' : 'node',
+      locations: isWin
+        ? [path.join(process.env.ProgramFiles || 'C:\\Program Files', 'nodejs')]
+        : [
+            '/usr/local/bin',
+            '/opt/homebrew/bin',
+            '/usr/bin',
+            path.join(home, '.nvm/current/bin'),
+            path.join(home, '.volta/bin'),
+            path.join(home, '.fnm/aliases/default/bin'),
+            path.join(home, '.local/share/fnm/aliases/default/bin'),
+          ],
+    },
+  ];
+
+  // 1. Try shell lookup (most reliable, gets user's actual PATH)
+  for (const rt of runtimes) {
+    const found = shellLookup(rt.name, isWin);
+    if (found) {
+      const dir = path.dirname(found);
+      resolvedRuntime = { executable: rt.name, pathDir: dir };
+      console.log(`[ChatService] Runtime: ${rt.name} (shell lookup: ${found})`);
+      return { executable: rt.name, env: buildEnv(dir) };
     }
   }
 
-  // 2. Ask a login shell where node is (works on macOS/Linux even when Finder doesn't have PATH)
-  if (!isWin) {
-    for (const shell of ['/bin/zsh', '/bin/bash', '/bin/sh']) {
-      if (!fs.existsSync(shell)) continue;
+  // 2. Probe known install locations
+  for (const rt of runtimes) {
+    for (const dir of rt.locations) {
       try {
-        const result = execFileSync(shell, ['-lc', 'which node'], {
-          encoding: 'utf8',
-          timeout: 5000,
-          env: { ...process.env, HOME: process.env.HOME || require('os').homedir() }
-        }).trim();
-        if (result && fs.existsSync(result)) {
-          resolvedNodePath = result;
-          return resolvedNodePath;
+        if (fs.existsSync(path.join(dir, rt.bin))) {
+          resolvedRuntime = { executable: rt.name, pathDir: dir };
+          console.log(`[ChatService] Runtime: ${rt.name} (found at ${dir})`);
+          return { executable: rt.name, env: buildEnv(dir) };
         }
-      } catch { /* continue */ }
+      } catch { /* skip */ }
     }
   }
 
-  // 2b. On Windows, try to find node via where.exe (most reliable)
+  // 3. Fallback — let the SDK try "node" and hope it's in PATH
+  console.warn('[ChatService] No runtime found, falling back to node');
+  resolvedRuntime = { executable: 'node', pathDir: null };
+  return { executable: 'node', env: { ...process.env } };
+}
+
+/** Build a fresh env with the given dir prepended to PATH. */
+function buildEnv(dir) {
+  if (!dir) return { ...process.env };
+  const sep = process.platform === 'win32' ? ';' : ':';
+  return { ...process.env, PATH: dir + sep + (process.env.PATH || '') };
+}
+
+/** Use shell to locate a binary (handles login-shell PATHs on macOS/Linux). */
+function shellLookup(name, isWin) {
   if (isWin) {
     try {
-      const result = execFileSync('where.exe', ['node'], {
-        encoding: 'utf8', timeout: 5000
-      }).trim().split(/\r?\n/)[0];
-      if (result && fs.existsSync(result)) {
-        resolvedNodePath = result;
-        return resolvedNodePath;
-      }
+      return execFileSync('where.exe', [name], {
+        encoding: 'utf8', timeout: 5000,
+      }).trim().split(/\r?\n/)[0] || null;
+    } catch { return null; }
+  }
+  for (const shell of ['/bin/zsh', '/bin/bash', '/bin/sh']) {
+    if (!fs.existsSync(shell)) continue;
+    try {
+      const result = execFileSync(shell, ['-lc', `which ${name}`], {
+        encoding: 'utf8', timeout: 5000,
+        env: { ...process.env, HOME: process.env.HOME || require('os').homedir() },
+      }).trim();
+      if (result && fs.existsSync(result)) return result;
     } catch { /* continue */ }
   }
-
-  // 3. Check common install locations
-  const candidates = isWin
-    ? [
-        path.join(process.env.ProgramFiles || 'C:\\Program Files', 'nodejs', 'node.exe'),
-      ]
-    : [
-        '/usr/local/bin/node',
-        '/opt/homebrew/bin/node',          // Homebrew on Apple Silicon
-        '/usr/local/opt/node/bin/node',    // Homebrew on Intel
-        path.join(process.env.HOME || '', '.nvm/current/bin/node'),
-        path.join(process.env.HOME || '', '.volta/bin/node'),
-        path.join(process.env.HOME || '', '.fnm/aliases/default/bin/node'),
-        path.join(process.env.HOME || '', '.local/share/fnm/aliases/default/bin/node'),
-        '/usr/bin/node',
-      ];
-
-  for (const candidate of candidates) {
-    try {
-      if (fs.existsSync(candidate)) {
-        resolvedNodePath = candidate;
-        return resolvedNodePath;
-      }
-    } catch { /* skip */ }
-  }
-
-  // 4. Fallback — let the SDK try "node" and hope for the best
-  resolvedNodePath = 'node';
-  return resolvedNodePath;
+  return null;
 }
 
 /**
@@ -224,8 +268,7 @@ class ChatService {
     delete process.env.CLAUDECODE;
 
     try {
-      const nodeExe = resolveNodeExecutable();
-      console.log(`[ChatService] Using node executable: ${nodeExe}`);
+      const runtime = resolveRuntime();
 
       const options = {
         cwd,
@@ -233,7 +276,8 @@ class ChatService {
         maxTurns: 100,
         includePartialMessages: true,
         permissionMode,
-        executable: nodeExe,
+        executable: runtime.executable,
+        env: runtime.env,
         pathToClaudeCodeExecutable: getSdkCliPath(),
         systemPrompt: { type: 'preset', preset: 'claude_code' },
         settingSources: ['user', 'project', 'local'],
@@ -483,13 +527,15 @@ class ChatService {
       // No onIdle callback — we resolve directly from the stream
       this._namingQueue = createMessageQueue();
 
+      const runtime = resolveRuntime();
       const stream = sdk.query({
         prompt: this._namingQueue.iterable,
         options: {
           maxTurns: 1,
           allowedTools: [],
           model: 'haiku',
-          executable: resolveNodeExecutable(),
+          executable: runtime.executable,
+          env: runtime.env,
           pathToClaudeCodeExecutable: getSdkCliPath(),
           systemPrompt: 'You generate very short tab titles (2-4 words, no quotes, no punctuation). Reply in the SAME language as the user message. Only output the title, nothing else.'
         }
