@@ -15,7 +15,8 @@
     "publish": "node scripts/build-renderer.js && electron-builder --win --publish always --config electron-builder.config.js",
     "generate-assets": "node build-assets/generate-installer-images.js",
     "test": "jest",
-    "test:watch": "jest --watch"
+    "test:watch": "jest --watch",
+    "postinstall": "electron-rebuild -f -w node-pty,keytar || echo rebuild skipped"
   },
   "keywords": [
     "claude",
@@ -36,6 +37,7 @@
     "node": ">=18.0.0"
   },
   "devDependencies": {
+    "@electron/rebuild": "^3.7.2",
     "dotenv-cli": "^11.0.0",
     "electron": "^28.0.0",
     "electron-builder": "^24.9.1",
