@@ -1643,8 +1643,22 @@ function createChatView(wrapperEl, project, options = {}) {
     const result = collectCurrentAnswer(card);
     if (result) answers[result.question] = result.answer;
 
+    // Collapse card into compact answered summary
+    const answerEntries = Object.entries(answers);
+    const summaryHtml = answerEntries.map(([, answer]) =>
+      `<span class="chat-question-answer-tag">${escapeHtml(answer)}</span>`
+    ).join('');
+
     card.classList.add('resolved');
-    card.querySelectorAll('.chat-question-option, .chat-question-submit').forEach(b => b.disabled = true);
+    card.innerHTML = `
+      <div class="chat-question-header resolved">
+        <div class="chat-perm-icon">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <span>${escapeHtml(t('chat.questionAnswered') || 'Answered')}</span>
+        <div class="chat-question-answers">${summaryHtml}</div>
+      </div>
+    `;
 
     api.chat.respondPermission({
       requestId,

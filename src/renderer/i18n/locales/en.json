@@ -704,6 +704,7 @@
     "deny": "Deny",
     "permissionRequired": "Permission Required",
     "questionFromClaude": "Claude has a question",
+    "questionAnswered": "Answered",
     "otherPlaceholder": "Or type your own answer...",
     "submit": "Submit",
     "next": "Next",
