@@ -813,11 +813,14 @@ async function renderSettingsTab(initialTab = 'general') {
   const customColorInput = document.getElementById('custom-color-input');
   const customSwatch = container.querySelector('.color-swatch-custom');
   if (customColorInput && customSwatch) {
+    let customColorDebounce = null;
     customColorInput.oninput = (e) => {
       const color = e.target.value;
       customSwatch.style.background = color;
       container.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
       customSwatch.classList.add('selected');
+      clearTimeout(customColorDebounce);
+      customColorDebounce = setTimeout(() => saveSettingsHandler(), 100);
     };
     customSwatch.onclick = (e) => {
       if (e.target === customColorInput) return;
