@@ -52,7 +52,7 @@ async function loadLocalSkills() {
             skillsAgentsState.skills.push({
               id: item,
               name: parsed.name || item,
-              description: parsed.description || 'Aucune description',
+              description: parsed.description || t('common.noDescription'),
               path: itemPath
             });
           } catch { /* SKILL.md not found, skip */ }
@@ -170,7 +170,7 @@ async function loadAgents() {
             skillsAgentsState.agents.push({
               id: item,
               name: parsed.name || item,
-              description: parsed.description || 'Aucune description',
+              description: parsed.description || t('common.noDescription'),
               tools: parsed.tools || [],
               path: itemPath
             });
@@ -244,7 +244,7 @@ function parseAgentMd(content) {
 function renderSkills() {
   const list = document.getElementById('skills-list');
   if (skillsAgentsState.skills.length === 0) {
-    list.innerHTML = `<div class="empty-list"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><h3>Aucun skill</h3><p>Creez votre premier skill</p></div>`;
+    list.innerHTML = `<div class="empty-list"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.14 12.94c.04-.31.06-.63.06-.94 0-.31-.02-.63-.06-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.488.488 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.484.484 0 00-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg><h3>${t('skillsAgents.noSkills')}</h3><p>${t('skillsAgents.createFirstSkill')}</p></div>`;
     return;
   }
 
@@ -261,25 +261,25 @@ function renderSkills() {
 
   if (localSkills.length > 0) {
     html += `<div class="list-section">
-      <div class="list-section-title">Local <span class="list-section-count">${localSkills.length}</span></div>
+      <div class="list-section-title">${t('skillsAgents.local')} <span class="list-section-count">${localSkills.length}</span></div>
       <div class="list-section-grid">`;
     html += localSkills.map(s => {
-      const desc = (s.description && s.description !== '---' && s.description !== 'Aucune description') ? escapeHtml(s.description) : '';
+      const desc = (s.description && s.description !== '---' && s.description !== t('common.noDescription')) ? escapeHtml(s.description) : '';
       const initial = escapeHtml((s.name || '?').charAt(0).toUpperCase());
       return `
       <div class="list-card" data-path="${s.path.replace(/"/g, '&quot;')}" data-is-plugin="false">
         <div class="card-initial">${initial}</div>
         <div class="list-card-header">
           <div class="list-card-title">${escapeHtml(s.name)}</div>
-          <div class="list-card-badge">Skill</div>
+          <div class="list-card-badge">${t('skillsAgents.skill')}</div>
         </div>
         ${desc ? `<div class="list-card-desc">${desc}</div>` : ''}
         <div class="list-card-footer">
           <button class="btn-sm btn-secondary btn-open">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-            ${t('marketplace.openFolder') || 'Ouvrir'}
+            ${t('marketplace.openFolder')}
           </button>
-          <button class="btn-sm btn-delete btn-del" title="${t('common.delete') || 'Supprimer'}">
+          <button class="btn-sm btn-delete btn-del" title="${t('common.delete')}">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
           </button>
         </div>
@@ -293,7 +293,7 @@ function renderSkills() {
       <div class="list-section-title"><span class="plugin-badge">Plugin</span> ${escapeHtml(source)} <span class="list-section-count">${skills.length}</span></div>
       <div class="list-section-grid">`;
     html += skills.map(s => {
-      const desc = (s.description && s.description !== '---' && s.description !== 'Aucune description') ? escapeHtml(s.description) : '';
+      const desc = (s.description && s.description !== '---' && s.description !== t('common.noDescription')) ? escapeHtml(s.description) : '';
       const initial = escapeHtml((s.name || '?').charAt(0).toUpperCase());
       return `
       <div class="list-card plugin-card" data-path="${s.path.replace(/"/g, '&quot;')}" data-is-plugin="true">
@@ -306,7 +306,7 @@ function renderSkills() {
         <div class="list-card-footer">
           <button class="btn-sm btn-secondary btn-open">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-            ${t('marketplace.openFolder') || 'Ouvrir'}
+            ${t('marketplace.openFolder')}
           </button>
         </div>
       </div>`;
@@ -320,7 +320,7 @@ function renderSkills() {
     card.querySelector('.btn-open').onclick = () => ctx.api.dialog.openInExplorer(card.dataset.path);
     const delBtn = card.querySelector('.btn-del');
     if (delBtn) {
-      delBtn.onclick = async () => { if (confirm('Supprimer ce skill ?')) { await ctx.fs.promises.rm(card.dataset.path, { recursive: true, force: true }); loadSkills(); } };
+      delBtn.onclick = async () => { if (confirm(t('skillsAgents.confirmDeleteSkill'))) { await ctx.fs.promises.rm(card.dataset.path, { recursive: true, force: true }); loadSkills(); } };
     }
   });
 }
@@ -328,30 +328,30 @@ function renderSkills() {
 function renderAgents() {
   const list = document.getElementById('agents-list');
   if (skillsAgentsState.agents.length === 0) {
-    list.innerHTML = `<div class="empty-list"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM8 17.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zM9.5 8c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5S9.5 9.38 9.5 8zm6.5 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><h3>Aucun agent</h3><p>Creez votre premier agent</p></div>`;
+    list.innerHTML = `<div class="empty-list"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zM8 17.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5zM9.5 8c0-1.38 1.12-2.5 2.5-2.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5S9.5 9.38 9.5 8zm6.5 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg><h3>${t('skillsAgents.noAgents')}</h3><p>${t('skillsAgents.createFirstAgent')}</p></div>`;
     return;
   }
 
   let html = `<div class="list-section">
-    <div class="list-section-title">Agents <span class="list-section-count">${skillsAgentsState.agents.length}</span></div>
+    <div class="list-section-title">${t('skillsAgents.agents')} <span class="list-section-count">${skillsAgentsState.agents.length}</span></div>
     <div class="list-section-grid">`;
   html += skillsAgentsState.agents.map(a => {
-    const desc = (a.description && a.description !== '---' && a.description !== 'Aucune description') ? escapeHtml(a.description) : '';
+    const desc = (a.description && a.description !== '---' && a.description !== t('common.noDescription')) ? escapeHtml(a.description) : '';
     const initial = escapeHtml((a.name || '?').charAt(0).toUpperCase());
     return `
     <div class="list-card agent-card" data-path="${a.path.replace(/"/g, '&quot;')}">
       <div class="card-initial">${initial}</div>
       <div class="list-card-header">
         <div class="list-card-title">${escapeHtml(a.name)}</div>
-        <div class="list-card-badge agent">Agent</div>
+        <div class="list-card-badge agent">${t('skillsAgents.agent')}</div>
       </div>
       ${desc ? `<div class="list-card-desc">${desc}</div>` : ''}
       <div class="list-card-footer">
         <button class="btn-sm btn-secondary btn-open">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-          ${t('marketplace.openFolder') || 'Ouvrir'}
+          ${t('marketplace.openFolder')}
         </button>
-        <button class="btn-sm btn-delete btn-del" title="${t('common.delete') || 'Supprimer'}">
+        <button class="btn-sm btn-delete btn-del" title="${t('common.delete')}">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
         </button>
       </div>
@@ -363,7 +363,7 @@ function renderAgents() {
 
   list.querySelectorAll('.list-card').forEach(card => {
     card.querySelector('.btn-open').onclick = () => ctx.api.dialog.openInExplorer(card.dataset.path);
-    card.querySelector('.btn-del').onclick = async () => { if (confirm('Supprimer cet agent ?')) { await ctx.fs.promises.rm(card.dataset.path, { recursive: true, force: true }); loadAgents(); } };
+    card.querySelector('.btn-del').onclick = async () => { if (confirm(t('skillsAgents.confirmDeleteAgent'))) { await ctx.fs.promises.rm(card.dataset.path, { recursive: true, force: true }); loadAgents(); } };
   });
 }
 

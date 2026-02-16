@@ -130,7 +130,7 @@ function setupEventListeners() {
   // Generate commit message
   btnGenerateCommit.onclick = async () => {
     if (gitChangesState.selectedFiles.size === 0) {
-      showToast({ type: 'warning', title: 'Fichiers requis', message: 'Selectionnez au moins un fichier', duration: 3000 });
+      showToast({ type: 'warning', title: t('gitChanges.filesRequired'), message: t('gitChanges.selectAtLeastOne'), duration: 3000 });
       return;
     }
 
@@ -153,10 +153,10 @@ function setupEventListeners() {
       if (result.success && result.message) {
         gitCommitMessage.value = result.message;
 
-        const sourceLabel = result.source === 'ai' ? 'AI' : 'Heuristique';
+        const sourceLabel = result.source === 'ai' ? t('gitChanges.sourceAi') : t('gitChanges.sourceHeuristic');
         showToast({
           type: 'success',
-          title: `Message g\u00e9n\u00e9r\u00e9 (${sourceLabel})`,
+          title: t('gitChanges.generated', { source: sourceLabel }),
           message: result.message,
           duration: 3000
         });
@@ -165,16 +165,16 @@ function setupEventListeners() {
           const groupNames = result.groups.map(g => g.name).join(', ');
           setTimeout(() => showToast({
             type: 'info',
-            title: 'Commits multiples sugg\u00e9r\u00e9s',
-            message: `Les fichiers touchent ${result.groups.length} zones (${groupNames}). Envisagez de s\u00e9parer en plusieurs commits.`,
+            title: t('gitChanges.multipleCommits'),
+            message: t('gitChanges.multipleCommitsHint', { count: result.groups.length, names: groupNames }),
             duration: 6000
           }), 500);
         }
       } else {
-        showToast({ type: 'error', title: 'Erreur', message: result.error || 'Impossible de g\u00e9n\u00e9rer le message', duration: 3000 });
+        showToast({ type: 'error', title: t('gitChanges.errorGenerate'), message: result.error || t('gitChanges.errorGenerateMessage'), duration: 3000 });
       }
     } catch (e) {
-      showToast({ type: 'error', title: 'Erreur', message: e.message, duration: 3000 });
+      showToast({ type: 'error', title: t('gitChanges.errorGenerate'), message: e.message, duration: 3000 });
     } finally {
       btnGenerateCommit.disabled = false;
       btnSpan.textContent = originalText;
@@ -185,12 +185,12 @@ function setupEventListeners() {
   btnCommitSelected.onclick = async () => {
     const message = gitCommitMessage.value.trim();
     if (!message) {
-      showToast({ type: 'warning', title: 'Message requis', message: 'Entrez un message de commit', duration: 3000 });
+      showToast({ type: 'warning', title: t('gitChanges.messageRequired'), message: t('gitChanges.enterCommitMessage'), duration: 3000 });
       return;
     }
 
     if (gitChangesState.selectedFiles.size === 0) {
-      showToast({ type: 'warning', title: 'Fichiers requis', message: 'Selectionnez au moins un fichier', duration: 3000 });
+      showToast({ type: 'warning', title: t('gitChanges.filesRequired'), message: t('gitChanges.selectAtLeastOne'), duration: 3000 });
       return;
     }
 
@@ -199,7 +199,7 @@ function setupEventListeners() {
       .filter(Boolean);
 
     btnCommitSelected.disabled = true;
-    btnCommitSelected.innerHTML = '<span class="loading-spinner"></span> Commit...';
+    btnCommitSelected.innerHTML = `<span class="loading-spinner"></span> ${t('gitChanges.committing')}`;
 
     try {
       const stageResult = await api.git.stageFiles({
@@ -219,8 +219,8 @@ function setupEventListeners() {
       if (commitResult.success) {
         showGitToast({
           success: true,
-          title: 'Commit cree',
-          message: `${selectedPaths.length} fichier(s) commites`,
+          title: t('gitChanges.commitCreated'),
+          message: t('gitChanges.commitFiles', { count: selectedPaths.length }),
           duration: 3000
         });
         gitCommitMessage.value = '';
@@ -232,7 +232,7 @@ function setupEventListeners() {
     } catch (e) {
       showGitToast({
         success: false,
-        title: 'Erreur de commit',
+        title: t('gitChanges.commitError'),
         message: e.message,
         duration: 5000
       });
@@ -256,13 +256,13 @@ async function loadGitChanges() {
   gitChangesState.projectPath = project.path;
   gitChangesProject.textContent = `- ${project.name}`;
 
-  gitChangesList.innerHTML = '<div class="git-changes-loading">Chargement des changements...</div>';
+  gitChangesList.innerHTML = `<div class="git-changes-loading">${t('gitChanges.loading')}</div>`;
 
   try {
     const status = await api.git.statusDetailed({ projectPath: project.path });
 
     if (!status.success) {
-      gitChangesList.innerHTML = `<div class="git-changes-empty"><p>Erreur: ${status.error}</p></div>`;
+      gitChangesList.innerHTML = `<div class="git-changes-empty"><p>${t('gitChanges.errorStatus', { message: status.error })}</p></div>`;
       return;
     }
 
@@ -272,7 +272,7 @@ async function loadGitChanges() {
     renderGitChanges();
     updateChangesCount();
   } catch (e) {
-    gitChangesList.innerHTML = `<div class="git-changes-empty"><p>Erreur: ${e.message}</p></div>`;
+    gitChangesList.innerHTML = `<div class="git-changes-empty"><p>${t('gitChanges.errorStatus', { message: e.message })}</p></div>`;
   }
 }
 
@@ -283,7 +283,7 @@ function renderGitChanges() {
     gitChangesList.innerHTML = `
       <div class="git-changes-empty">
         <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
-        <p>Aucun changement detecte</p>
+        <p>${t('gitChanges.noChanges')}</p>
       </div>
     `;
     gitChangesStats.innerHTML = '';

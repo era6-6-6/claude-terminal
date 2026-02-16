@@ -178,44 +178,44 @@ async function renderSettingsTab(initialTab = 'general') {
             </div>
             <div class="settings-row">
               <div class="settings-label">
-                <div>${t('settings.checkForUpdates') || 'Mises a jour'}</div>
-                <div class="settings-desc">${t('settings.checkForUpdatesDesc') || 'Verifier si une nouvelle version est disponible'}</div>
+                <div>${t('settings.checkForUpdates')}</div>
+                <div class="settings-desc">${t('settings.checkForUpdatesDesc')}</div>
               </div>
               <button type="button" class="btn-outline" id="btn-check-updates">
-                ${t('settings.checkForUpdatesBtn') || 'Verifier'}
+                ${t('settings.checkForUpdatesBtn')}
               </button>
             </div>
             </div>
           </div>
           <div class="settings-group">
-            <div class="settings-group-title">${t('settings.quickActionPresets') || 'Quick Action Presets'}</div>
+            <div class="settings-group-title">${t('settings.quickActionPresets')}</div>
             <div class="settings-card">
-            <div class="settings-desc" style="margin-bottom: 10px; padding: 8px 16px 0;">${t('settings.quickActionPresetsDesc') || 'Presets personnalises affiches dans la configuration des actions rapides'}</div>
+            <div class="settings-desc" style="margin-bottom: 10px; padding: 8px 16px 0;">${t('settings.quickActionPresetsDesc')}</div>
             <div class="custom-presets-list" id="custom-presets-list">
               ${(settings.customPresets || []).map((p, i) => `
                 <div class="custom-preset-item" data-index="${i}">
                   <span class="custom-preset-icon">${ctx.QuickActions.QUICK_ACTION_ICONS[p.icon] || ctx.QuickActions.QUICK_ACTION_ICONS.play}</span>
                   <span class="custom-preset-name">${escapeHtml(p.name)}</span>
                   <code class="custom-preset-cmd">${escapeHtml(p.command)}</code>
-                  <button class="custom-preset-delete" data-index="${i}" title="${t('common.delete') || 'Supprimer'}">
+                  <button class="custom-preset-delete" data-index="${i}" title="${t('common.delete')}">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                   </button>
                 </div>
-              `).join('') || `<div class="custom-presets-empty">${t('settings.noCustomPresets') || 'Aucun preset personnalise'}</div>`}
+              `).join('') || `<div class="custom-presets-empty">${t('settings.noCustomPresets')}</div>`}
             </div>
             <div class="custom-preset-add" id="custom-preset-add-area">
               <div class="custom-preset-add-row" id="custom-preset-form" style="display:none;">
-                <input type="text" id="new-preset-name" placeholder="${t('quickActions.namePlaceholder') || 'Nom'}" class="settings-input-sm">
-                <input type="text" id="new-preset-command" placeholder="${t('quickActions.commandPlaceholder') || 'Commande'}" class="settings-input-sm" style="flex:2;">
+                <input type="text" id="new-preset-name" placeholder="${t('quickActions.namePlaceholder')}" class="settings-input-sm">
+                <input type="text" id="new-preset-command" placeholder="${t('quickActions.commandPlaceholder')}" class="settings-input-sm" style="flex:2;">
                 <select id="new-preset-icon" class="settings-select-sm">
                   ${Object.keys(ctx.QuickActions.QUICK_ACTION_ICONS).map(icon => `<option value="${icon}">${icon}</option>`).join('')}
                 </select>
-                <button class="btn-accent-sm" id="btn-save-preset">${t('common.save') || 'OK'}</button>
-                <button class="btn-ghost-sm" id="btn-cancel-preset">${t('common.cancel') || 'Annuler'}</button>
+                <button class="btn-accent-sm" id="btn-save-preset">${t('common.save')}</button>
+                <button class="btn-ghost-sm" id="btn-cancel-preset">${t('common.cancel')}</button>
               </div>
               <button class="quick-action-add-btn" id="btn-add-preset" style="width:100%;">
                 <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg>
-                <span>${t('settings.addPreset') || 'Ajouter un preset'}</span>
+                <span>${t('settings.addPreset')}</span>
               </button>
             </div>
             </div>
@@ -283,12 +283,12 @@ async function renderSettingsTab(initialTab = 'general') {
             </div>
           </div>
           <div class="settings-group">
-            <div class="settings-group-title">${t('settings.hooks.title') || 'Smart Hooks'}</div>
+            <div class="settings-group-title">${t('settings.hooks.title')}</div>
             <div class="settings-card">
             <div class="settings-toggle-row">
               <div class="settings-toggle-label">
-                <div>${t('settings.hooks.enable') || 'Enable Smart Hooks'}</div>
-                <div class="settings-toggle-desc">${t('settings.hooks.description') || 'Real-time insights from Claude Code (time tracking, notifications, dashboard stats)'}</div>
+                <div>${t('settings.hooks.enable')}</div>
+                <div class="settings-toggle-desc">${t('settings.hooks.description')}</div>
               </div>
               <label class="settings-toggle">
                 <input type="checkbox" id="hooks-enabled-toggle" ${settings.hooksEnabled ? 'checked' : ''}>
@@ -298,12 +298,12 @@ async function renderSettingsTab(initialTab = 'general') {
             </div>
           </div>
           <div class="settings-group">
-            <div class="settings-group-title">${t('settings.advanced') || 'Advanced'}</div>
+            <div class="settings-group-title">${t('settings.advanced')}</div>
             <div class="settings-card">
             <div class="settings-toggle-row">
               <div class="settings-toggle-label">
-                <div>${t('settings.enable1MContext') || '1M Token Context'}</div>
-                <div class="settings-toggle-desc">${t('settings.enable1MContextDesc') || 'Enable 1 million token context window for Opus and Sonnet (beta)'}</div>
+                <div>${t('settings.enable1MContext')}</div>
+                <div class="settings-toggle-desc">${t('settings.enable1MContextDesc')}</div>
               </div>
               <label class="settings-toggle">
                 <input type="checkbox" id="enable-1m-context-toggle" ${settings.enable1MContext ? 'checked' : ''}>
@@ -556,13 +556,13 @@ async function renderSettingsTab(initialTab = 'general') {
     btnCheckUpdates.onclick = async () => {
       const originalText = btnCheckUpdates.innerHTML;
       btnCheckUpdates.disabled = true;
-      btnCheckUpdates.innerHTML = `<span class="btn-spinner"></span> ${t('settings.checking') || 'Verification...'}`;
+      btnCheckUpdates.innerHTML = `<span class="btn-spinner"></span> ${t('settings.checking')}`;
       try {
         const result = await ctx.api.updates.checkForUpdates();
         if (result?.success && result.version) {
           btnCheckUpdates.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> v${result.version}`;
         } else {
-          btnCheckUpdates.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> ${t('settings.upToDate') || 'A jour'}`;
+          btnCheckUpdates.innerHTML = `<svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg> ${t('settings.upToDate')}`;
         }
       } catch (e) {
         btnCheckUpdates.innerHTML = originalText;
@@ -600,17 +600,17 @@ async function renderSettingsTab(initialTab = 'general') {
           } else {
             tokenInput.classList.add('error');
             tokenInput.value = '';
-            tokenInput.placeholder = 'Token invalide';
+            tokenInput.placeholder = t('settings.githubTokenInvalid');
             setTimeout(() => {
               tokenInput.classList.remove('error');
               tokenInput.placeholder = 'ghp_xxxxxxxxxxxx';
             }, 2000);
             connectBtn.disabled = false;
-            connectBtn.innerHTML = 'Connecter';
+            connectBtn.innerHTML = t('settings.githubConnect');
           }
         } catch (e) {
           connectBtn.disabled = false;
-          connectBtn.innerHTML = 'Connecter';
+          connectBtn.innerHTML = t('settings.githubConnect');
         }
       };
 
@@ -757,7 +757,7 @@ async function renderSettingsTab(initialTab = 'general') {
       switchProvider(newHooksEnabled ? 'hooks' : 'scraping');
     }
 
-    ctx.showToast({ type: 'info', title: t('settings.saved') || 'Settings saved', message: '' });
+    ctx.showToast({ type: 'info', title: t('settings.saved'), message: '' });
   };
 
   const autoSave = () => saveSettingsHandler();

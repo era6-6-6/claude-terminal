@@ -159,8 +159,8 @@ function renderPluginsDiscover() {
   if (plugins.length === 0) {
     content.innerHTML = `<div class="plugins-empty-state">
       <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" opacity="0.3"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
-      <h3>${t('plugins.noResults') || 'No plugins found'}</h3>
-      <p>${t('plugins.trySearch') || 'Try a different search or category'}</p>
+      <h3>${t('plugins.noResults')}</h3>
+      <p>${t('plugins.trySearch')}</p>
     </div>`;
     return;
   }
@@ -218,8 +218,8 @@ function renderPluginsInstalled() {
   if (plugins.length === 0) {
     content.innerHTML = `<div class="plugins-empty-state">
       <svg viewBox="0 0 24 24" fill="currentColor" width="48" height="48" opacity="0.3"><path d="M20.5 11H19V7c0-1.1-.9-2-2-2h-4V3.5C13 2.12 11.88 1 10.5 1S8 2.12 8 3.5V5H4c-1.1 0-1.99.9-1.99 2v3.8H3.5c1.49 0 2.7 1.21 2.7 2.7s-1.21 2.7-2.7 2.7H2V20c0 1.1.9 2 2 2h3.8v-1.5c0-1.49 1.21-2.7 2.7-2.7 1.49 0 2.7 1.21 2.7 2.7V22H17c1.1 0 2-.9 2-2v-4h1.5c1.38 0 2.5-1.12 2.5-2.5S21.88 11 20.5 11z"/></svg>
-      <h3>${t('plugins.noInstalled') || 'No plugins installed'}</h3>
-      <p>${t('plugins.installHint') || 'Discover and install plugins from the catalog'}</p>
+      <h3>${t('plugins.noInstalled')}</h3>
+      <p>${t('plugins.installHint')}</p>
     </div>`;
     return;
   }
@@ -233,7 +233,7 @@ function renderPluginsInstalled() {
     const contentBadges = [];
     if (skills) contentBadges.push(`<span class="plugin-content-badge skills">${skills} skill${skills > 1 ? 's' : ''}</span>`);
     if (agents) contentBadges.push(`<span class="plugin-content-badge agents">${agents} agent${agents > 1 ? 's' : ''}</span>`);
-    if (commands) contentBadges.push(`<span class="plugin-content-badge commands">${commands} cmd${commands > 1 ? 's' : ''}</span>`);
+    if (commands) contentBadges.push(`<span class="plugin-content-badge commands">${commands} cmd</span>`);
     if (hooks) contentBadges.push(`<span class="plugin-content-badge hooks">hooks</span>`);
 
     return `<div class="plugin-installed-item" data-plugin-name="${escapeHtml(plugin.pluginName)}" data-marketplace="${escapeHtml(plugin.marketplace)}" data-path="${escapeHtml(plugin.installPath)}" style="animation-delay: ${i * 50}ms">
