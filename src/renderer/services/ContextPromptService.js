@@ -303,7 +303,7 @@ async function resolvePromptTemplate(id, project) {
 
   if (text.includes('$lastCommit') && project?.path) {
     try {
-      const log = await api.git.log({ projectPath: project.path, count: 1 });
+      const log = await api.git.commitHistory({ projectPath: project.path, limit: 1 });
       const last = log?.[0];
       text = text.replace(/\$lastCommit/g, last ? `${last.hash?.slice(0, 7)} ${last.message}` : '[no commits]');
     } catch {
