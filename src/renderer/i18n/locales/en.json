@@ -587,6 +587,11 @@
       "install": "Install"
     }
   },
+  "prompts": {
+    "inject": "Prompts",
+    "noTemplates": "No prompt templates",
+    "manageTemplates": "Manage templates"
+  },
   "timetracking": {
     "title": "Time Tracking",
     "totalTime": "Total time",

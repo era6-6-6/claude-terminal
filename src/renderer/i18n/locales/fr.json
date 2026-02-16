@@ -131,6 +131,11 @@
       "install": "Install"
     }
   },
+  "prompts": {
+    "inject": "Prompts",
+    "noTemplates": "Aucun template de prompt",
+    "manageTemplates": "Gérer les templates"
+  },
   "git": {
     "noRemote": "Pas de remote",
     "notTracking": "Branche non suivie",

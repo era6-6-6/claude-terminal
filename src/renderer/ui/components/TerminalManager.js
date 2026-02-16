@@ -44,6 +44,7 @@ const {
 } = require('../themes/terminal-themes');
 const registry = require('../../../project-types/registry');
 const { createChatView } = require('./ChatView');
+const ContextPromptService = require('../../services/ContextPromptService');
 
 // Lazy require to avoid circular dependency
 let QuickActions = null;
@@ -1619,6 +1620,144 @@ function hideErrorOverlay(projectIndex) {
   }
 }
 
+// ── Prompt Templates Injection Bar ──
+
+/**
+ * Render prompts dropdown bar for a project
+ */
+function renderPromptsBar(project) {
+  const wrapper = document.getElementById('prompts-dropdown-wrapper');
+  const dropdown = document.getElementById('prompts-dropdown');
+  const promptsBtn = document.getElementById('filter-btn-prompts');
+
+  if (!wrapper || !dropdown) return;
+
+  if (!project) {
+    wrapper.style.display = 'none';
+    return;
+  }
+
+  const templates = ContextPromptService.getPromptTemplates(project.id);
+
+  if (templates.length === 0) {
+    wrapper.style.display = 'none';
+    return;
+  }
+
+  wrapper.style.display = 'flex';
+
+  const itemsHtml = templates.map(tmpl => `
+    <button class="prompts-dropdown-item" data-prompt-id="${tmpl.id}" title="${escapeHtml(tmpl.description || '')}">
+      <span class="prompts-item-name">${escapeHtml(tmpl.name)}</span>
+      ${tmpl.scope === 'project' ? '<span class="prompts-item-badge">project</span>' : ''}
+    </button>
+  `).join('');
+
+  dropdown.innerHTML = itemsHtml + `
+    <div class="prompts-dropdown-footer" id="prompts-dropdown-manage">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span>${t('prompts.manageTemplates')}</span>
+    </div>
+  `;
+
+  // Click handlers for prompt items
+  dropdown.querySelectorAll('.prompts-dropdown-item').forEach(btn => {
+    btn.onclick = async () => {
+      console.log('[PromptsBar] Click - promptId:', btn.dataset.promptId);
+      dropdown.classList.remove('active');
+      promptsBtn.classList.remove('open');
+
+      const promptId = btn.dataset.promptId;
+      const activeTerminalId = getActiveTerminal();
+      console.log('[PromptsBar] activeTerminalId:', activeTerminalId);
+      if (!activeTerminalId) {
+        console.warn('[PromptsBar] No active terminal!');
+        return;
+      }
+
+      try {
+        const resolvedText = await ContextPromptService.resolvePromptTemplate(promptId, project);
+        if (!resolvedText) return;
+
+        const termData = getTerminal(activeTerminalId);
+        if (termData && termData.mode === 'chat') {
+          // Chat mode: inject into chat textarea
+          const wrapper = document.querySelector(`.terminal-wrapper[data-id="${activeTerminalId}"]`);
+          const chatInput = wrapper?.querySelector('.chat-input');
+          if (chatInput) {
+            chatInput.value += resolvedText;
+            chatInput.style.height = 'auto';
+            chatInput.style.height = chatInput.scrollHeight + 'px';
+            chatInput.focus();
+          }
+        } else {
+          // Terminal mode: inject into PTY (use ptyId if available, for switched terminals)
+          const ptyTarget = termData?.ptyId || activeTerminalId;
+          api.terminal.input({ id: ptyTarget, data: resolvedText });
+        }
+      } catch (err) {
+        console.error('[PromptsBar] Error resolving template:', err);
+      }
+    };
+  });
+
+  // Manage footer handler
+  const manageFooter = dropdown.querySelector('#prompts-dropdown-manage');
+  if (manageFooter) {
+    manageFooter.onclick = () => {
+      dropdown.classList.remove('active');
+      promptsBtn.classList.remove('open');
+      // Open Settings > Library tab
+      const settingsBtn = document.getElementById('btn-settings');
+      if (settingsBtn) settingsBtn.click();
+      setTimeout(() => {
+        const libraryTab = document.querySelector('.settings-tab[data-tab="library"]');
+        if (libraryTab) libraryTab.click();
+      }, 100);
+    };
+  }
+
+  // Toggle dropdown
+  promptsBtn.onclick = (e) => {
+    e.stopPropagation();
+    const isOpen = dropdown.classList.contains('active');
+
+    // Close other dropdowns
+    const branchDropdown = document.getElementById('branch-dropdown');
+    const filterBtnBranch = document.getElementById('filter-btn-branch');
+    const actionsDropdown = document.getElementById('actions-dropdown');
+    const filterBtnActions = document.getElementById('filter-btn-actions');
+    const gitChangesPanel = document.getElementById('git-changes-panel');
+    if (branchDropdown) branchDropdown.classList.remove('active');
+    if (filterBtnBranch) filterBtnBranch.classList.remove('open');
+    if (actionsDropdown) actionsDropdown.classList.remove('active');
+    if (filterBtnActions) filterBtnActions.classList.remove('open');
+    if (gitChangesPanel) gitChangesPanel.classList.remove('active');
+
+    dropdown.classList.toggle('active', !isOpen);
+    promptsBtn.classList.toggle('open', !isOpen);
+  };
+
+  // Close on outside click
+  const closeHandler = (e) => {
+    if (!wrapper.contains(e.target)) {
+      dropdown.classList.remove('active');
+      promptsBtn.classList.remove('open');
+    }
+  };
+  document.removeEventListener('click', wrapper._closeHandler);
+  wrapper._closeHandler = closeHandler;
+  document.addEventListener('click', closeHandler);
+}
+
+/**
+ * Hide prompts dropdown bar
+ */
+function hidePromptsBar() {
+  const wrapper = document.getElementById('prompts-dropdown-wrapper');
+  if (wrapper) wrapper.style.display = 'none';
+}
+
 /**
  * Filter terminals by project
  */
@@ -1638,6 +1777,9 @@ function filterByProject(projectIndex) {
       qa.setTerminalCallback(createTerminal);
       qa.renderQuickActionsBar(projects[projectIndex]);
     }
+
+    // Render Prompts bar for this project
+    renderPromptsBar(projects[projectIndex]);
   } else {
     filterIndicator.style.display = 'none';
 
@@ -1646,6 +1788,9 @@ function filterByProject(projectIndex) {
     if (qa) {
       qa.hideQuickActionsBar();
     }
+
+    // Hide Prompts bar
+    hidePromptsBar();
   }
 
   // Pre-index DOM elements once - O(n) instead of O(n²)
@@ -2958,6 +3103,7 @@ async function switchTerminalMode(id) {
       chatView: null,
       terminal,
       fitAddon,
+      ptyId,
       status: 'loading'
     });
 
