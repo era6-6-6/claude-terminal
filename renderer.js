@@ -107,6 +107,7 @@ function showModal(title, content, footer = '') {
 
 function closeModal() {
   document.getElementById('modal-overlay').classList.remove('active');
+  document.getElementById('modal')?.classList.remove('modal--sessions');
 }
 
 // ========== LOCAL STATE ==========
@@ -877,6 +878,146 @@ function createBasicTerminalForProject(project) {
 }
 
 // ========== SESSIONS MODAL ==========
+// Pin storage for modal (shared with TerminalManager via same file)
+const _modalPinsFile = path.join(window.electron_nodeModules.os.homedir(), '.claude-terminal', 'session-pins.json');
+let _modalPinsCache = null;
+
+function _loadModalPins() {
+  if (_modalPinsCache) return _modalPinsCache;
+  try {
+    _modalPinsCache = JSON.parse(fs.readFileSync(_modalPinsFile, 'utf8'));
+  } catch { _modalPinsCache = {}; }
+  return _modalPinsCache;
+}
+
+function _saveModalPins() {
+  try { fs.writeFileSync(_modalPinsFile, JSON.stringify(_modalPinsCache || {}, null, 2), 'utf8'); } catch {}
+}
+
+function _toggleModalPin(sessionId) {
+  const pins = _loadModalPins();
+  if (pins[sessionId]) delete pins[sessionId]; else pins[sessionId] = true;
+  _modalPinsCache = pins;
+  _saveModalPins();
+  return !!pins[sessionId];
+}
+
+// SVG sprites for session modal
+const MODAL_SVG_DEFS = `<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+  <symbol id="sm-chat" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></symbol>
+  <symbol id="sm-bolt" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+  <symbol id="sm-msg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="sm-clock" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></symbol>
+  <symbol id="sm-branch" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="6" y1="3" x2="6" y2="15"/><circle cx="18" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M18 9a9 9 0 0 1-9 9"/></symbol>
+  <symbol id="sm-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></symbol>
+  <symbol id="sm-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="sm-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+  <symbol id="sm-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 17v5"/><path d="M9 11V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v7"/><path d="M5 17h14"/><path d="M7 11l-2 6h14l-2-6"/></symbol>
+</svg>`;
+
+function _cleanModalSessionText(text) {
+  if (!text) return { text: '', skillName: '' };
+  let skillName = '';
+  const cmdMatch = text.match(/<command-name>\/?([^<]+)<\/command-name>/);
+  if (cmdMatch) skillName = cmdMatch[1].trim().replace(/^\//, '');
+  const argsMatch = text.match(/<command-args>([^<]+)<\/command-args>/);
+  const argsText = argsMatch ? argsMatch[1].trim() : '';
+  let cleaned = text.replace(/<[^>]+>[^<]*<\/[^>]+>/g, '');
+  cleaned = cleaned.replace(/<[^>]+>/g, '');
+  cleaned = cleaned.replace(/\[Request interrupted[^\]]*\]/g, '');
+  cleaned = cleaned.replace(/\s+/g, ' ').trim();
+  if (!cleaned && argsText) cleaned = argsText;
+  return { text: cleaned, skillName };
+}
+
+function _formatModalTime(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 1) return t('time.justNow') || "a l'instant";
+  if (diffMins < 60) return t('time.minutesAgo', { count: diffMins }) || `il y a ${diffMins}min`;
+  if (diffHours < 24) return t('time.hoursAgo', { count: diffHours }) || `il y a ${diffHours}h`;
+  if (diffDays < 7) return t('time.daysAgo', { count: diffDays }) || `il y a ${diffDays}j`;
+  const locale = getCurrentLanguage() === 'fr' ? 'fr-FR' : 'en-US';
+  return date.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+}
+
+function _truncateModalText(text, max) {
+  if (!text) return '';
+  return text.length <= max ? text : text.slice(0, max) + '...';
+}
+
+function _preprocessModalSessions(sessions) {
+  const now = Date.now();
+  const pins = _loadModalPins();
+  return sessions.map(session => {
+    const promptResult = _cleanModalSessionText(session.firstPrompt);
+    const summaryResult = _cleanModalSessionText(session.summary);
+    const skillName = promptResult.skillName || summaryResult.skillName;
+    let displayTitle = '', displaySubtitle = '', isSkill = false;
+    if (summaryResult.text) { displayTitle = summaryResult.text; displaySubtitle = promptResult.text; }
+    else if (promptResult.text) { displayTitle = promptResult.text; }
+    else if (skillName) { displayTitle = '/' + skillName; isSkill = true; }
+    else { displayTitle = getCurrentLanguage() === 'fr' ? 'Conversation sans titre' : 'Untitled conversation'; }
+    const hoursAgo = (now - new Date(session.modified).getTime()) / 3600000;
+    const freshness = hoursAgo < 1 ? 'hot' : hoursAgo < 24 ? 'warm' : '';
+    const searchText = (displayTitle + ' ' + displaySubtitle + ' ' + (session.gitBranch || '')).toLowerCase();
+    const pinned = !!pins[session.sessionId];
+    return { ...session, displayTitle, displaySubtitle, isSkill, freshness, searchText, pinned };
+  });
+}
+
+function _groupModalSessions(sessions) {
+  const groups = {
+    pinned: { key: 'pinned', label: t('sessions.pinned') || 'Pinned', sessions: [] },
+    today: { key: 'today', label: t('sessions.today') || 'Today', sessions: [] },
+    yesterday: { key: 'yesterday', label: t('sessions.yesterday') || 'Yesterday', sessions: [] },
+    thisWeek: { key: 'thisWeek', label: t('sessions.thisWeek') || 'This week', sessions: [] },
+    older: { key: 'older', label: t('sessions.older') || 'Older', sessions: [] }
+  };
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
+  const weekAgo = new Date(today); weekAgo.setDate(weekAgo.getDate() - 7);
+  sessions.forEach(s => {
+    if (s.pinned) { groups.pinned.sessions.push(s); return; }
+    const d = new Date(s.modified);
+    if (d >= today) groups.today.sessions.push(s);
+    else if (d >= yesterday) groups.yesterday.sessions.push(s);
+    else if (d >= weekAgo) groups.thisWeek.sessions.push(s);
+    else groups.older.sessions.push(s);
+  });
+  return Object.values(groups).filter(g => g.sessions.length > 0);
+}
+
+function _buildModalCardHtml(s, index) {
+  const freshClass = s.freshness ? ` session-card--${s.freshness}` : '';
+  const pinnedClass = s.pinned ? ' session-card--pinned' : '';
+  const animClass = index < 10 ? ' session-card--anim' : ' session-card--instant';
+  const skillClass = s.isSkill ? ' session-card-icon--skill' : '';
+  const titleSkillClass = s.isSkill ? ' session-card-title--skill' : '';
+  const iconId = s.isSkill ? 'sm-bolt' : 'sm-chat';
+  const pinTitle = s.pinned ? (t('sessions.unpin') || 'Unpin') : (t('sessions.pin') || 'Pin');
+
+  return `<div class="session-card${freshClass}${pinnedClass}${animClass}" data-sid="${s.sessionId}" style="--ci:${index < 10 ? index : 0}">
+<div class="session-card-icon${skillClass}"><svg width="16" height="16"><use href="#${iconId}"/></svg></div>
+<div class="session-card-body">
+<span class="session-card-title${titleSkillClass}">${escapeHtml(_truncateModalText(s.displayTitle, 80))}</span>
+${s.displaySubtitle ? `<span class="session-card-subtitle">${escapeHtml(_truncateModalText(s.displaySubtitle, 120))}</span>` : ''}
+</div>
+<div class="session-card-meta">
+<span class="session-meta-item"><svg width="11" height="11"><use href="#sm-msg"/></svg>${s.messageCount}</span>
+<span class="session-meta-item"><svg width="11" height="11"><use href="#sm-clock"/></svg>${_formatModalTime(s.modified)}</span>
+${s.gitBranch ? `<span class="session-meta-branch"><svg width="10" height="10"><use href="#sm-branch"/></svg>${escapeHtml(s.gitBranch)}</span>` : ''}
+</div>
+<button class="session-card-pin" data-pin-sid="${s.sessionId}" title="${pinTitle}"><svg width="13" height="13"><use href="#sm-pin"/></svg></button>
+<div class="session-card-arrow"><svg width="12" height="12"><use href="#sm-arrow"/></svg></div>
+</div>`;
+}
+
 async function showSessionsModal(project) {
   if (!project) return;
 
@@ -884,112 +1025,126 @@ async function showSessionsModal(project) {
     const sessions = await api.claude.sessions(project.path);
 
     if (!sessions || sessions.length === 0) {
-      showModal(`Sessions - ${project.name}`, `
+      showModal(t('terminals.resumeConversation') || 'Resume a conversation', `
         <div class="sessions-modal-empty">
-          <p>Aucune session sauvegardee pour ce projet</p>
+          <p>${t('terminals.noTerminals') || 'No conversations yet'}</p>
           <button class="modal-btn primary" onclick="closeModal(); createTerminalForProject(projectsState.get().projects[${getProjectIndex(project.id)}])">
-            Nouvelle conversation
+            ${t('terminals.newConversation') || 'New conversation'}
           </button>
         </div>
       `);
       return;
     }
 
-    const formatRelativeTime = (dateString) => {
-      const date = new Date(dateString);
-      const now = new Date();
-      const diffMs = now - date;
-      const diffMins = Math.floor(diffMs / 60000);
-      const diffHours = Math.floor(diffMs / 3600000);
-      const diffDays = Math.floor(diffMs / 86400000);
-      if (diffMins < 1) return "a l'instant";
-      if (diffMins < 60) return `il y a ${diffMins}min`;
-      if (diffHours < 24) return `il y a ${diffHours}h`;
-      if (diffDays < 7) return `il y a ${diffDays}j`;
-      return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-    };
+    // Add sessions-modal-wide class to make the modal wider
+    const modalEl = document.getElementById('modal');
+    modalEl?.classList.add('modal--sessions');
 
-    const truncateText = (text, maxLength) => {
-      if (!text) return '';
-      return text.length <= maxLength ? text : text.slice(0, maxLength) + '...';
-    };
+    const processed = _preprocessModalSessions(sessions);
+    const groups = _groupModalSessions(processed);
+    const flatSessions = [];
+    groups.forEach(g => g.sessions.forEach(s => flatSessions.push(s)));
+    const sessionMap = new Map(flatSessions.map(s => [s.sessionId, s]));
 
-    const cleanPromptAsTitle = (prompt) => {
-      if (!prompt) return 'Sans titre';
-      let clean = prompt
-        .replace(/```[\s\S]*?```/g, '')       // remove code blocks
-        .replace(/`[^`]+`/g, '')              // remove inline code
-        .replace(/<[^>]+>/g, '')              // remove HTML/XML tags
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // [text](url) -> text
-        .replace(/https?:\/\/\S+/g, '')       // remove URLs
-        .replace(/[#*_~>|]/g, '')             // remove markdown symbols
-        .replace(/\n+/g, ' ')                 // newlines to spaces
-        .replace(/\s+/g, ' ')                 // collapse whitespace
-        .trim();
-      // Take first sentence or chunk
-      const firstSentence = clean.match(/^[^.!?\n]+[.!?]?/);
-      if (firstSentence) clean = firstSentence[0].trim();
-      // Capitalize first letter
-      if (clean.length > 0) clean = clean[0].toUpperCase() + clean.slice(1);
-      // Truncate
-      if (clean.length > 80) clean = clean.slice(0, 77) + '...';
-      return clean || 'Sans titre';
-    };
-
-    const sessionsHtml = sessions.map(session => {
-      const title = session.summary || cleanPromptAsTitle(session.firstPrompt);
-      const showPrompt = session.summary && session.firstPrompt;
-      return `
-      <div class="session-card-modal" data-session-id="${session.sessionId}">
-        <div class="session-header">
-          <span class="session-icon">💬</span>
-          <span class="session-title">${escapeHtml(title)}</span>
+    let cardIndex = 0;
+    const groupsHtml = groups.map(group => {
+      const cardsHtml = group.sessions.map(session => {
+        const html = _buildModalCardHtml(session, cardIndex);
+        cardIndex++;
+        return html;
+      }).join('');
+      return `<div class="session-group" data-group-key="${group.key}">
+        <div class="session-group-label">
+          <span class="session-group-text">${group.label}</span>
+          <span class="session-group-count">${group.sessions.length}</span>
+          <span class="session-group-line"></span>
         </div>
-        ${showPrompt ? `<div class="session-prompt">${escapeHtml(truncateText(session.firstPrompt, 100))}</div>` : ''}
-        <div class="session-meta">
-          ${session.messageCount ? `<span class="session-messages">${session.messageCount} msgs</span>` : ''}
-          <span class="session-time">${formatRelativeTime(session.modified)}</span>
-          ${session.gitBranch ? `<span class="session-branch">${escapeHtml(session.gitBranch)}</span>` : ''}
-        </div>
+        ${cardsHtml}
       </div>`;
     }).join('');
 
-    showModal(`Reprendre - ${project.name}`, `
-      <div class="sessions-modal">
-        <div class="sessions-modal-actions">
-          <button class="modal-btn primary sessions-new-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-              <path d="M12 5v14M5 12h14"/>
-            </svg>
-            Nouvelle conversation
+    showModal(t('terminals.resumeConversation') || 'Resume a conversation', `
+      ${MODAL_SVG_DEFS}
+      <div class="sessions-modal-modern">
+        <div class="sessions-modal-toolbar">
+          <div class="sessions-search-wrapper">
+            <svg class="sessions-search-icon" width="13" height="13"><use href="#sm-search"/></svg>
+            <input type="text" class="sessions-search" placeholder="${t('common.search') || 'Search'}..." />
+          </div>
+          <span class="sessions-count">${sessions.length}</span>
+          <button class="sessions-new-btn">
+            <svg width="14" height="14"><use href="#sm-plus"/></svg>
+            ${t('common.new') || 'New'}
           </button>
         </div>
-        <div class="sessions-modal-list">
-          ${sessionsHtml}
+        <div class="sessions-list">
+          ${groupsHtml}
         </div>
       </div>
     `);
 
-    // Add click handlers after rendering
-    document.querySelectorAll('.session-card-modal').forEach(card => {
-      card.onclick = async () => {
-        const sessionId = card.dataset.sessionId;
-        closeModal();
-        // Resume session via TerminalManager with skipPermissions setting
-        TerminalManager.resumeSession(project, sessionId, {
-          skipPermissions: settingsState.get().skipPermissions
-        });
-      };
+    const listEl = document.querySelector('.sessions-modal-modern .sessions-list');
+
+    // Event delegation for clicks
+    listEl?.addEventListener('click', (e) => {
+      const pinBtn = e.target.closest('.session-card-pin');
+      if (pinBtn) {
+        e.stopPropagation();
+        const sid = pinBtn.dataset.pinSid;
+        if (!sid) return;
+        _toggleModalPin(sid);
+        // Invalidate cache in TerminalManager too
+        _modalPinsCache = null;
+        // Re-render
+        showSessionsModal(project);
+        return;
+      }
+      const card = e.target.closest('.session-card');
+      if (!card) return;
+      const sessionId = card.dataset.sid;
+      if (!sessionId) return;
+      closeModal();
+      TerminalManager.resumeSession(project, sessionId, {
+        skipPermissions: settingsState.get().skipPermissions
+      });
     });
 
-    document.querySelector('.sessions-new-btn')?.addEventListener('click', () => {
+    // New conversation button
+    document.querySelector('.sessions-modal-modern .sessions-new-btn')?.addEventListener('click', () => {
       closeModal();
       createTerminalForProject(project);
     });
 
+    // Search
+    const searchInput = document.querySelector('.sessions-modal-modern .sessions-search');
+    if (searchInput) {
+      let searchTimer = null;
+      searchInput.addEventListener('input', () => {
+        clearTimeout(searchTimer);
+        searchTimer = setTimeout(() => {
+          const query = searchInput.value.toLowerCase().trim();
+          const cards = listEl.querySelectorAll('.session-card');
+          const groupEls = listEl.querySelectorAll('.session-group');
+          const visibility = [];
+          cards.forEach(card => {
+            const sid = card.dataset.sid;
+            const session = sessionMap.get(sid);
+            visibility.push({ card, match: !query || (session && session.searchText.includes(query)) });
+          });
+          visibility.forEach(({ card, match }) => { card.style.display = match ? '' : 'none'; });
+          groupEls.forEach(group => {
+            const hasVisible = group.querySelector('.session-card:not([style*="display: none"])');
+            group.style.display = hasVisible ? '' : 'none';
+          });
+        }, 150);
+      });
+      // Auto-focus search
+      requestAnimationFrame(() => searchInput.focus());
+    }
+
   } catch (error) {
     console.error('Error showing sessions modal:', error);
-    showModal('Erreur', `<p>Impossible de charger les sessions</p>`);
+    showModal('Error', `<p>${t('terminals.resumeError') || 'Unable to load sessions'}</p>`);
   }
 }
 
