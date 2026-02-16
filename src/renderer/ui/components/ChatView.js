@@ -1660,10 +1660,14 @@ function createChatView(wrapperEl, project, options = {}) {
     const result = collectCurrentAnswer(card);
     if (result) answers[result.question] = result.answer;
 
-    // Collapse card into compact answered summary
+    // Collapse card into compact answered summary showing each Q&A pair
     const answerEntries = Object.entries(answers);
-    const summaryHtml = answerEntries.map(([, answer]) =>
-      `<span class="chat-question-answer-tag">${escapeHtml(answer)}</span>`
+
+    const pairsHtml = answerEntries.map(([question, answer]) =>
+      `<div class="chat-qa-pair">
+        <span class="chat-qa-question">${escapeHtml(question)}</span>
+        <span class="chat-qa-answer">${escapeHtml(answer)}</span>
+      </div>`
     ).join('');
 
     card.classList.add('resolved');
@@ -1673,8 +1677,8 @@ function createChatView(wrapperEl, project, options = {}) {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
         </div>
         <span>${escapeHtml(t('chat.questionAnswered') || 'Answered')}</span>
-        <div class="chat-question-answers">${summaryHtml}</div>
       </div>
+      <div class="chat-qa-summary">${pairsHtml}</div>
     `;
 
     api.chat.respondPermission({
