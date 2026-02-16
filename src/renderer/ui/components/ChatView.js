@@ -586,7 +586,7 @@ function createChatView(wrapperEl, project, options = {}) {
     { type: 'errors', label: '@errors', desc: t('chat.mentionErrors') || 'Attach error lines from terminal', icon: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' },
     { type: 'selection', label: '@selection', desc: t('chat.mentionSelection') || 'Attach selected text', icon: '<svg viewBox="0 0 24 24"><path d="M5 3l14 9-14 9V3z"/></svg>' },
     { type: 'todos', label: '@todos', desc: t('chat.mentionTodos') || 'Attach TODO items from project', icon: '<svg viewBox="0 0 24 24"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22,4 12,14.01 9,11.01"/></svg>' },
-    { type: 'project', label: '@project', desc: t('chat.mentionProject') || 'Attach project info', icon: '<svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg>' },
+    { type: 'project', label: '@project', desc: t('chat.mentionProject') || 'Attach project info', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>' },
     { type: 'context', label: '@context', desc: t('chat.mentionContext') || 'Inject a context pack', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>' },
     { type: 'prompt', label: '@prompt', desc: t('chat.mentionPrompt') || 'Insert a prompt template', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14,2 14,8 20,8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>' },
   ];
@@ -878,22 +878,28 @@ function createChatView(wrapperEl, project, options = {}) {
     mentionMode = 'projects';
     if (mentionSelectedIndex >= shown.length) mentionSelectedIndex = shown.length - 1;
 
-    mentionDropdown.innerHTML = shown.map((p, i) => `
-      <div class="chat-mention-item${i === mentionSelectedIndex ? ' active' : ''}" data-projectid="${escapeHtml(p.id)}" data-projectname="${escapeHtml(p.name || '')}" data-projectpath="${escapeHtml(p.path || '')}">
-        <span class="chat-mention-item-icon"><svg viewBox="0 0 24 24"><path d="M3 3h7v7H3zM14 3h7v7h-7zM3 14h7v7H3zM14 14h7v7h-7z"/></svg></span>
+    mentionDropdown.innerHTML = shown.map((p, i) => {
+      const pIcon = p.icon || null;
+      const pColor = p.color || null;
+      const iconHtml = pIcon
+        ? `<span class="chat-mention-item-emoji"${pColor ? ` style="color:${pColor}"` : ''}>${pIcon}</span>`
+        : `<span class="chat-mention-item-icon"${pColor ? ` style="color:${pColor}"` : ''}><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/></svg></span>`;
+      return `
+      <div class="chat-mention-item${i === mentionSelectedIndex ? ' active' : ''}" data-projectid="${escapeHtml(p.id)}" data-projectname="${escapeHtml(p.name || '')}" data-projectpath="${escapeHtml(p.path || '')}" data-projecticon="${escapeHtml(p.icon || '')}" data-projectcolor="${escapeHtml(p.color || '')}">
+        ${iconHtml}
         <div class="chat-mention-item-info">
           <span class="chat-mention-item-name">${escapeHtml(p.name || p.path || 'Unknown')}</span>
           <span class="chat-mention-item-desc">${escapeHtml(p.path || '')}</span>
         </div>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
 
     mentionDropdown.style.display = '';
 
     mentionDropdown.querySelectorAll('.chat-mention-item').forEach((el, idx) => {
       el.addEventListener('mousedown', (e) => {
         e.preventDefault();
-        if (el.dataset.projectid) selectMentionProject(el.dataset.projectid, el.dataset.projectname, el.dataset.projectpath);
+        if (el.dataset.projectid) selectMentionProject(el.dataset.projectid, el.dataset.projectname, el.dataset.projectpath, el.dataset.projecticon, el.dataset.projectcolor);
       });
       el.addEventListener('mouseenter', () => {
         mentionSelectedIndex = idx;
@@ -902,9 +908,9 @@ function createChatView(wrapperEl, project, options = {}) {
     });
   }
 
-  function selectMentionProject(projectId, projectName, projectPath) {
+  function selectMentionProject(projectId, projectName, projectPath, projectIcon, projectColor) {
     removeAtTrigger();
-    addMentionChip('project', { id: projectId, name: projectName, path: projectPath });
+    addMentionChip('project', { id: projectId, name: projectName, path: projectPath, icon: projectIcon || '', color: projectColor || '' });
     hideMentionDropdown();
     inputEl.focus();
   }
@@ -1038,7 +1044,12 @@ function createChatView(wrapperEl, project, options = {}) {
     else if (type === 'project' && data?.name) label = `@project:${data.name}`;
     else if (type === 'context' && data?.name) label = `@context:${data.name}`;
     else label = `@${type}`;
-    pendingMentions.push({ type, label, icon: getMentionIcon(type), data });
+    let icon = getMentionIcon(type);
+    // Use project emoji if available
+    if (type === 'project' && data?.icon) {
+      icon = data.icon;
+    }
+    pendingMentions.push({ type, label, icon, data });
     renderMentionChips();
   }
 
@@ -1054,13 +1065,20 @@ function createChatView(wrapperEl, project, options = {}) {
       return;
     }
     mentionChipsEl.style.display = 'flex';
-    mentionChipsEl.innerHTML = pendingMentions.map((chip, i) => `
-      <div class="chat-mention-chip" data-index="${i}">
+    mentionChipsEl.innerHTML = pendingMentions.map((chip, i) => {
+      const chipColor = (chip.type === 'project' && chip.data?.color) ? chip.data.color : '';
+      const colorStyle = chipColor ? ` style="--chip-color: ${chipColor}"` : '';
+      const isProject = chip.type === 'project';
+      const displayName = isProject && chip.data?.name ? chip.data.name : chip.label;
+      const typePrefix = isProject ? `<span class="chat-mention-chip-type">project</span>` : '';
+      return `
+      <div class="chat-mention-chip${chipColor ? ' has-project-color' : ''}${isProject ? ' chip-project' : ''}" data-index="${i}"${colorStyle}>
         <span class="chat-mention-chip-icon">${chip.icon}</span>
-        <span class="chat-mention-chip-label">${escapeHtml(chip.label)}</span>
+        ${typePrefix}
+        <span class="chat-mention-chip-label">${escapeHtml(displayName)}</span>
         <button class="chat-mention-chip-remove" data-index="${i}" title="Remove">&times;</button>
-      </div>
-    `).join('');
+      </div>`;
+    }).join('');
     mentionChipsEl.querySelectorAll('.chat-mention-chip-remove').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -1950,9 +1968,11 @@ function createChatView(wrapperEl, project, options = {}) {
       html += `<span class="chat-msg-queued-badge">${escapeHtml(t('chat.queued') || 'Queued')}</span>`;
     }
     if (mentions.length > 0) {
-      html += `<div class="chat-msg-mentions">${mentions.map(m =>
-        `<span class="chat-msg-mention-tag">${m.icon}<span>${escapeHtml(m.label)}</span></span>`
-      ).join('')}</div>`;
+      html += `<div class="chat-msg-mentions">${mentions.map(m => {
+        const tagColor = (m.type === 'project' && m.data?.color) ? m.data.color : '';
+        const tagStyle = tagColor ? ` style="--chip-color: ${tagColor}"` : '';
+        return `<span class="chat-msg-mention-tag${tagColor ? ' has-project-color' : ''}"${tagStyle}>${m.icon}<span>${escapeHtml(m.label)}</span></span>`;
+      }).join('')}</div>`;
     }
     if (images.length > 0) {
       html += `<div class="chat-msg-images">${images.map(img =>
