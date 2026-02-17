@@ -2029,6 +2029,9 @@ function createChatView(wrapperEl, project, options = {}) {
    * Route a message from a subagent to the appropriate handler
    */
   function handleSubagentMessage(info, message) {
+    // Ignore late messages for already-completed subagents
+    if (info.completed) return;
+
     if (message.type === 'stream_event' && message.event) {
       handleSubagentStreamEvent(info, message.event);
       return;
@@ -2040,10 +2043,11 @@ function createChatView(wrapperEl, project, options = {}) {
     // Subagent finished — mark card as done individually
     if (message.type === 'result') {
       completeSubagentCard(info.card);
-      // Remove from tracking
-      for (const [idx, tracked] of taskToolIndices) {
-        if (tracked === info) { taskToolIndices.delete(idx); break; }
-      }
+      // Mark as completed but keep in taskToolIndices so late-arriving
+      // messages with the same parent_tool_use_id are still routed here
+      // (silently ignored) instead of leaking into the main chat.
+      // Cleanup happens on chat-done / chat-error.
+      info.completed = true;
       return;
     }
   }
@@ -2892,11 +2896,9 @@ function createChatView(wrapperEl, project, options = {}) {
             completeToolCard(card);
           }
           toolCards.clear();
-          // Complete any remaining subagent cards
-          for (const [idx, info] of taskToolIndices) {
-            completeSubagentCard(info.card);
-            taskToolIndices.delete(idx);
-          }
+          // Don't complete subagent cards here — they have their own lifecycle
+          // via parent_tool_use_id messages and will be completed when their
+          // individual 'result' message arrives or on chat-done/chat-error
         }
         break;
     }
@@ -2951,7 +2953,10 @@ function createChatView(wrapperEl, project, options = {}) {
         // Task (subagent) — update subagent card from assistant message
         if (block.name === 'Task' && block.input) {
           for (const [, info] of taskToolIndices) {
-            updateSubagentCard(info.card, block.input);
+            if (info.toolUseId === block.id) {
+              updateSubagentCard(info.card, block.input);
+              break;
+            }
           }
           hasToolUse = true;
           continue;
@@ -2960,11 +2965,11 @@ function createChatView(wrapperEl, project, options = {}) {
       }
       // tool_result → store output on matching tool card, or mark subagent complete
       if (block.type === 'tool_result') {
-        // Subagent cards
-        for (const [idx, info] of taskToolIndices) {
+        // Subagent cards — mark completed but keep for late message routing
+        for (const [, info] of taskToolIndices) {
           if (info.toolUseId === block.tool_use_id) {
             completeSubagentCard(info.card);
-            taskToolIndices.delete(idx);
+            info.completed = true;
             break;
           }
         }
@@ -3155,6 +3160,39 @@ function createChatView(wrapperEl, project, options = {}) {
       } else if (msg.role === 'assistant' && msg.type === 'tool_use') {
         // Skip TodoWrite from history — it's internal state
         if (msg.toolName === 'TodoWrite') continue;
+
+        // Task (subagent) — render as subagent card in history
+        if (msg.toolName === 'Task') {
+          const input = msg.toolInput || {};
+          const name = input.name || input.subagent_type || 'agent';
+          const desc = input.description || '';
+          const el = document.createElement('div');
+          el.className = 'chat-subagent-card completed history';
+          el.innerHTML = `
+            <div class="chat-subagent-header">
+              <div class="chat-subagent-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/>
+                  <path d="M6 21V9a9 9 0 0 0 9 9"/>
+                </svg>
+              </div>
+              <div class="chat-subagent-info">
+                <span class="chat-subagent-type">${escapeHtml(name)}</span>
+                <span class="chat-subagent-desc">${escapeHtml(desc)}</span>
+              </div>
+              <div class="chat-subagent-status complete">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+              </div>
+              <svg class="chat-subagent-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+            </div>
+            <div class="chat-subagent-body"></div>
+          `;
+          el.querySelector('.chat-subagent-header').addEventListener('click', () => {
+            el.classList.toggle('expanded');
+          });
+          messagesEl.appendChild(el);
+          continue;
+        }
 
         const detail = getToolDisplayInfo(msg.toolName, msg.toolInput || {});
         const el = document.createElement('div');
