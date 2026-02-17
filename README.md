@@ -4,7 +4,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/downloads/Sterll/claude-terminal/total?color=d97706&label=downloads" alt="Downloads" />
-  <img src="https://img.shields.io/badge/version-0.9.3-orange" alt="Version" />
+  <img src="https://img.shields.io/badge/version-0.9.4-orange" alt="Version" />
   <img src="https://img.shields.io/badge/platform-Windows%20|%20macOS%20|%20Linux-blue" alt="Platform" />
   <img src="https://img.shields.io/badge/license-GPL--3.0-green" alt="License" />
   <img src="https://img.shields.io/badge/electron-28-purple" alt="Electron" />
@@ -41,7 +41,9 @@
 - **Pin conversations**: keep important sessions at the top of the list
 - **Fork sessions**: branch from any message to explore alternative paths
 - Type @project to attach README.md and file tree from any project as context
+- Type **@context** to inject a context pack or **@prompt** to insert a saved prompt template directly into your message
 - Interrupt streaming mid-turn, auto-generated tab names via haiku model
+- Compacting indicator shown during conversation compaction so you know when context is being compressed
 
 ### Terminals
 - Multiple Claude Code terminals per project with tabbed interface
@@ -108,6 +110,12 @@
 - View skill README and details
 - Local cache for fast browsing
 
+### Library
+- Manage reusable **context packs** (documents, snippets, file contents) and **prompt templates**
+- Inject context packs or prompt templates directly into the chat via @context and @prompt mentions
+- Insert prompt templates into any terminal with one click from the toolbar
+- Generate skills and agents in the background using the Agent SDK
+
 ### Skills & Agents
 - Browse and manage Claude Code skills and agents
 - View SKILL.md and agent configuration files
@@ -121,6 +129,8 @@
 ### Sessions
 - View Claude Code sessions per project
 - Browse session history with timestamps and metadata
+- Pin sessions to the top and rename them inline from the resume dialog
+- Modernized session resume modal with search and pinned sessions
 
 ### Memory
 - Edit global, settings and project-specific CLAUDE.md files
