@@ -272,7 +272,9 @@ contextBridge.exposeInMainWorld('electron_api', {
     onIdle: createListener('chat-idle'),
     onPermissionRequest: createListener('chat-permission-request'),
     generateTabName: (params) => ipcRenderer.invoke('chat-generate-tab-name', params),
-    loadHistory: (params) => ipcRenderer.invoke('chat-load-history', params)
+    loadHistory: (params) => ipcRenderer.invoke('chat-load-history', params),
+    generateSkillAgent: (params) => ipcRenderer.invoke('chat-generate-skill-agent', params),
+    cancelGeneration: (params) => ipcRenderer.send('chat-cancel-generation', params)
   },
 
   // ==================== HOOKS ====================

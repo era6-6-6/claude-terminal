@@ -2694,47 +2694,89 @@ async function submitCreateModal() {
   const projectIndex = document.getElementById('create-modal-project').value;
 
   if (!description) {
-    alert('Veuillez entrer une description');
+    showToast({ type: 'warning', title: t('ui.createWithClaude'), message: t('ui.describeWhatToCreate') });
     return;
   }
 
   if (projectIndex === '') {
-    alert('Veuillez selectionnez un projet');
+    showToast({ type: 'warning', title: t('ui.createWithClaude'), message: t('ui.selectProject') });
     return;
   }
 
-  let project;
+  let cwd;
   if (projectIndex === 'global') {
     const { os } = window.electron_nodeModules;
-    project = { name: 'Global', path: os.homedir(), id: 'global' };
+    cwd = os.homedir();
   } else {
     const projects = projectsState.get().projects;
-    project = projects[parseInt(projectIndex)];
+    const project = projects[parseInt(projectIndex)];
+    if (!project) return;
+    cwd = project.path;
   }
 
-  if (!project) {
-    alert('Projet invalide');
-    return;
-  }
-
+  const type = createModalType;
   closeCreateModal();
 
-  // Switch to Claude tab
-  document.querySelector('[data-tab="claude"]')?.click();
-
-  // Create terminal for the project
-  const terminalId = await TerminalManager.createTerminal(project, {
-    skipPermissions: settingsState.get().skipPermissions
+  // Show persistent in-progress toast
+  const progressToast = showToast({
+    type: 'info',
+    title: t('ui.createWithClaude'),
+    message: type === 'skill' ? t('ui.generatingSkill') : t('ui.generatingAgent'),
+    duration: 0
   });
 
-  // Wait for terminal to be ready, then send the command
-  setTimeout(() => {
-    const command = createModalType === 'skill'
-      ? `/create-skill ${description}`
-      : `/create-agents ${description}`;
+  const dismissToast = (toast) => {
+    if (toast && toast.parentNode) {
+      toast.classList.add('toast-exit');
+      setTimeout(() => toast.remove(), 300);
+    }
+  };
 
-    api.terminal.input({ id: terminalId, data: command + '\r' });
-  }, 1500);
+  try {
+    const result = await api.chat.generateSkillAgent({
+      type,
+      description,
+      cwd,
+      model: settingsState.get().chatModel || 'sonnet'
+    });
+
+    dismissToast(progressToast);
+
+    if (result.success) {
+      const successMsg = type === 'skill' ? t('ui.skillCreatedSuccess') : t('ui.agentCreatedSuccess');
+      showToast({ type: 'success', title: t('ui.createWithClaude'), message: successMsg });
+
+      // Desktop notification
+      api.notification.show({
+        title: type === 'skill' ? t('ui.newSkill') : t('ui.newAgent'),
+        body: successMsg,
+        autoDismiss: 6000
+      });
+
+      // Refresh the skills/agents panel
+      if (type === 'skill') {
+        SkillsAgentsPanel.loadSkills();
+      } else {
+        SkillsAgentsPanel.loadAgents();
+      }
+    } else {
+      const isCancelled = result.error === 'Cancelled';
+      showToast({
+        type: isCancelled ? 'warning' : 'error',
+        title: t('ui.createWithClaude'),
+        message: isCancelled ? t('ui.generationCancelled') : `${t('ui.generationFailed')}: ${result.error}`,
+        duration: 8000
+      });
+    }
+  } catch (err) {
+    dismissToast(progressToast);
+    showToast({
+      type: 'error',
+      title: t('ui.createWithClaude'),
+      message: `${t('ui.generationFailed')}: ${err.message}`,
+      duration: 8000
+    });
+  }
 }
 
 // Create modal event listeners

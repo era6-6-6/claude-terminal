@@ -220,6 +220,8 @@ class ChatService {
     this.sessions = new Map();
     /** @type {Map<string, { resolve: Function, reject: Function }>} */
     this.pendingPermissions = new Map();
+    /** @type {Map<string, { abortController: AbortController, type: string }>} */
+    this.backgroundGenerations = new Map();
     /** @type {BrowserWindow|null} */
     this.mainWindow = null;
 
@@ -644,6 +646,91 @@ class ChatService {
     }
   }
 
+  // ── Background skill/agent generation ──
+
+  /**
+   * Run a background SDK session to generate a skill or agent.
+   * Does NOT forward messages to renderer — runs silently.
+   * @param {Object} params
+   * @param {'skill'|'agent'} params.type
+   * @param {string} params.description
+   * @param {string} params.cwd - Working directory for SDK context
+   * @param {string} [params.model]
+   * @returns {Promise<{success: boolean, type: string, error?: string, genId: string}>}
+   */
+  async generateSkillOrAgent({ type, description, cwd, model }) {
+    const sdk = await loadSDK();
+    const genId = `gen-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const abortController = new AbortController();
+
+    // The SDK loads the skill guide (create-skill or create-agents) from ~/.claude/skills/
+    // which are installed at app startup by installBundledSkills()
+    const skillName = type === 'skill' ? 'create-skill' : 'create-agents';
+    const prompt = `${description}\n\nCreate the files immediately without asking for clarification.`;
+
+    const messageQueue = createMessageQueue();
+    messageQueue.push({
+      type: 'user',
+      message: { role: 'user', content: prompt }
+    });
+
+    const prevClaudeCode = process.env.CLAUDECODE;
+    delete process.env.CLAUDECODE;
+
+    this.backgroundGenerations.set(genId, { abortController, type, description });
+
+    try {
+      const runtime = resolveRuntime();
+
+      const queryStream = sdk.query({
+        prompt: messageQueue.iterable,
+        options: {
+          cwd,
+          abortController,
+          maxTurns: 20,
+          permissionMode: 'bypassPermissions',
+          allowDangerouslySkipPermissions: true,
+          executable: runtime.executable,
+          env: runtime.env,
+          pathToClaudeCodeExecutable: getSdkCliPath(),
+          systemPrompt: { type: 'preset', preset: 'claude_code' },
+          model: model || 'sonnet',
+          skills: [skillName],
+          disallowedTools: ['AskUserQuestion', 'EnterPlanMode', 'ExitPlanMode'],
+        }
+      });
+
+      // Consume stream silently
+      for await (const _msg of queryStream) {
+        // No-op — we just need to drive the async generator to completion
+      }
+
+      messageQueue.close();
+      return { success: true, type, genId };
+    } catch (err) {
+      const wasCancelled = err.name === 'AbortError'
+        || err.message === 'Aborted'
+        || err.message?.includes('Request was aborted');
+      if (wasCancelled) {
+        return { success: false, type, error: 'Cancelled', genId };
+      }
+      console.error(`[ChatService] Background generation error:`, err.message);
+      return { success: false, type, error: err.message, genId };
+    } finally {
+      messageQueue.close();
+      this.backgroundGenerations.delete(genId);
+      if (prevClaudeCode) process.env.CLAUDECODE = prevClaudeCode;
+    }
+  }
+
+  /**
+   * Cancel an in-progress background generation
+   */
+  cancelGeneration(genId) {
+    const gen = this.backgroundGenerations.get(genId);
+    if (gen) gen.abortController.abort();
+  }
+
   closeSession(sessionId) {
     const session = this.sessions.get(sessionId);
     if (session) {
@@ -669,6 +756,11 @@ class ChatService {
       this._namingQueue.close();
       this._namingReady = false;
     }
+    // Cancel all background generations
+    for (const [, gen] of this.backgroundGenerations) {
+      gen.abortController.abort();
+    }
+    this.backgroundGenerations.clear();
   }
 }
 

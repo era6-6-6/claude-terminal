@@ -58,6 +58,21 @@ function registerChatHandlers() {
       return { success: false, error: err.message };
     }
   });
+
+  // Background skill/agent generation via Agent SDK
+  ipcMain.handle('chat-generate-skill-agent', async (_event, params) => {
+    try {
+      return await chatService.generateSkillOrAgent(params);
+    } catch (err) {
+      console.error('[chat-generate-skill-agent] Error:', err.message);
+      return { success: false, error: err.message };
+    }
+  });
+
+  // Cancel a background generation
+  ipcMain.on('chat-cancel-generation', (_event, { genId }) => {
+    chatService.cancelGeneration(genId);
+  });
 }
 
 module.exports = { registerChatHandlers };
